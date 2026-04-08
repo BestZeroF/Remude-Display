@@ -1,0 +1,124 @@
+CREATE TABLE catalogo_roles (
+    id_rol SERIAL PRIMARY KEY,
+    nombre_rol VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE catalogo_estatus (
+    id_estatus SERIAL PRIMARY KEY,
+    nombre_estatus VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE catalogo_tallas (
+    id_talla SERIAL PRIMARY KEY,
+    nomenclatura VARCHAR(10) NOT NULL
+);
+
+CREATE TABLE catalogo_tiposdocumento (
+    id_tipodoc SERIAL PRIMARY KEY,
+    nombre_tipo VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE catalogo_tiponotificacion (
+    id_tiponotif SERIAL PRIMARY KEY,
+    nombre_tipo VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE disciplinas (
+    id_disciplina SERIAL PRIMARY KEY,
+    nombre_disciplina VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    id_rol INTEGER REFERENCES catalogo_roles(id_rol),
+    nombre VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    correo VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL, -- Aquí guardarás el hash de la contraseña
+    estado_cuenta BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE entrenadores (
+    id_entrenador SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    titulo_logro VARCHAR(150),
+    fecha_logro DATE,
+    descripcion TEXT,
+    especialidad VARCHAR(100)
+);
+
+CREATE TABLE administrativos (
+    id_admin SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    nivel_permisos INTEGER DEFAULT 1
+);
+
+CREATE TABLE atletas (
+    id_atleta SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_entrenador INTEGER REFERENCES entrenadores(id_entrenador) ON DELETE SET NULL, -- Si se borra el entrenador, queda en NULL
+    id_estatus INTEGER REFERENCES catalogo_estatus(id_estatus),
+    id_talla INTEGER REFERENCES catalogo_tallas(id_talla),
+    curp VARCHAR(18) UNIQUE NOT NULL,
+    fecha_nacimiento DATE NOT NULL
+);
+
+CREATE TABLE atleta_disciplina (
+    id_atleta INTEGER REFERENCES atletas(id_atleta) ON DELETE CASCADE,
+    id_disciplina INTEGER REFERENCES disciplinas(id_disciplina) ON DELETE CASCADE,
+    PRIMARY KEY (id_atleta, id_disciplina)
+);
+
+CREATE TABLE documentos (
+    id_documento SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_tipodoc INTEGER REFERENCES catalogo_tiposdocumento(id_tipodoc),
+    id_estatus INTEGER REFERENCES catalogo_estatus(id_estatus),
+    ruta_archivo VARCHAR(255) NOT NULL,
+    motivo_rechazo TEXT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_vencimiento DATE -- Vital para la funcionalidad de recordatorio de caducidad
+);
+
+CREATE TABLE espacios_deportivos (
+    id_espacio SERIAL PRIMARY KEY,
+    id_estatus INTEGER REFERENCES catalogo_estatus(id_estatus),
+    nombre_espacio VARCHAR(150) NOT NULL,
+    ubicacion VARCHAR(250)
+);
+
+CREATE TABLE eventos (
+    id_evento SERIAL PRIMARY KEY,
+    id_admin INTEGER REFERENCES administrativos(id_admin),
+    nombre_evento VARCHAR(150) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE,
+    descripcion TEXT
+);
+
+CREATE TABLE historial_deportivo (
+    id_historial SERIAL PRIMARY KEY,
+    id_atleta INTEGER REFERENCES atletas(id_atleta) ON DELETE CASCADE,
+    descripcion TEXT,
+    fecha_evento DATE
+);
+
+CREATE TABLE solicitudes_reasignacion (
+    id_solicitud SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE, -- El atleta que solicita
+    id_atleta INTEGER REFERENCES atletas(id_atleta) ON DELETE CASCADE,
+    id_entrenador INTEGER REFERENCES entrenadores(id_entrenador) ON DELETE CASCADE, -- Al entrenador que quiere pasarse
+    id_estatus INTEGER REFERENCES catalogo_estatus(id_estatus),
+    motivo TEXT,
+    fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notificaciones (
+    id_notificaciones SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_tiponotif INTEGER REFERENCES catalogo_tiponotificacion(id_tiponotif),
+    titulo VARCHAR(100) NOT NULL,
+    mensaje TEXT NOT NULL,
+    leido BOOLEAN DEFAULT FALSE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
