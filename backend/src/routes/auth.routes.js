@@ -1,12 +1,17 @@
 const { Router } = require('express');
-const { login, registroEntrenador } = require('../controllers/auth.controller');
-
 const router = Router();
+const authController = require('../controllers/auth.controller.js');
 
-// Endpoint: POST /api/auth/login
-router.post('/login', login);
+// Ruta para iniciar sesión
+router.post('/login', authController.login);
 
-// Endpoint: POST /api/auth/registro/entrenador
-router.post('/registro/entrenador', registroEntrenador);
+// Ruta para el registro inicial de un entrenador (y su cuenta de usuario asociada)
+router.post('/registro/entrenador', authController.registroEntrenador);
+
+// Ruta para solicitar la recuperación de contraseña
+router.post('/recuperar-password', authController.recuperarPassword);
+
+// Ruta para aplicar la nueva contraseña usando el token temporal
+router.put('/reset-password', authController.resetPassword);
 
 module.exports = router;

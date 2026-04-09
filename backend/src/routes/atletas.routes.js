@@ -1,32 +1,21 @@
 const { Router } = require('express');
-const { 
-    getAtletas, 
-    createAtleta, 
-    getAtletaById, 
-    updateAtleta, 
-    deleteAtleta 
-} = require('../controllers/atletas.controller');
-
 const router = Router();
+const atletasController = require('../controllers/atletas.controller.js');
+const authMiddleware = require('../middlewares/auth.middleware.js');
 
-// Endpoint: GET /api/atletas
-// Obtiene la lista de todos los atletas
-router.get('/', getAtletas);
+// Proteger todas las rutas del módulo de atletas
+router.use(authMiddleware);
 
-// Endpoint: POST /api/atletas
-// Registra un nuevo atleta
-router.post('/', createAtleta);
+// Obtener el perfil completo de un atleta
+router.get('/:id', atletasController.obtenerAtletaPorId);
 
-// Endpoint: GET /api/atletas/:id
-// Obtiene el detalle de un atleta específico por su id_atleta
-router.get('/:id', getAtletaById);
+// El atleta actualiza su información básica
+router.put('/:id', atletasController.actualizarAtleta);
 
-// Endpoint: PUT /api/atletas/:id
-// Actualiza la información de un atleta específico
-router.put('/:id', updateAtleta);
+// Soft delete: Dar de baja a un atleta
+router.delete('/:id', atletasController.darDeBajaAtleta);
 
-// Endpoint: DELETE /api/atletas/:id
-// Elimina un atleta (siempre y cuando no tenga dependencias)
-router.delete('/:id', deleteAtleta);
+// Cargar el historial deportivo en el dashboard del atleta
+router.get('/:id/historial', atletasController.obtenerHistorial);
 
 module.exports = router;

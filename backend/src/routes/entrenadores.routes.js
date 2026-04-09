@@ -1,9 +1,27 @@
 const { Router } = require('express');
-const { getDashboardResumen } = require('../controllers/entrenadores.controller');
-
 const router = Router();
+const entrenadoresController = require('../controllers/entrenadores.controller.js');
+const authMiddleware = require('../middlewares/auth.middleware.js');
 
-// Por ahora dejamos la ruta abierta para probar, luego le pondremos el middleware
-router.get('/dashboard', getDashboardResumen);
+// TODAS las rutas de entrenadores requieren autenticación JWT
+router.use(authMiddleware);
+
+// IMPORTANTE: Rutas estáticas como /dashboard deben ir ANTES que las rutas con parámetros dinámicos (/:id)
+// de lo contrario Express pensará que "dashboard" es un :id.
+
+// Obtener dashboard del entrenador autenticado
+router.get('/dashboard', entrenadoresController.obtenerDashboard);
+
+// Listar todos los entrenadores
+router.get('/', entrenadoresController.listarEntrenadores);
+
+// Obtener perfil específico
+router.get('/:id', entrenadoresController.obtenerEntrenadorPorId);
+
+// Actualizar perfil del entrenador
+router.put('/:id', entrenadoresController.actualizarEntrenador);
+
+// Obtener la lista de atletas que le pertenecen al entrenador
+router.get('/:id/atletas', entrenadoresController.obtenerAtletasDeEntrenador);
 
 module.exports = router;
