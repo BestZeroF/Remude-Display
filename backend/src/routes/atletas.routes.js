@@ -6,6 +6,9 @@ const authMiddleware = require('../middlewares/auth.middleware.js');
 // Proteger todas las rutas del módulo de atletas
 router.use(authMiddleware);
 
+// POST /api/atletas - Registrar un nuevo atleta (El entrenador o Admin lo dan de alta)
+router.post('/', atletasController.crearAtleta);
+
 // Obtener el perfil completo de un atleta
 router.get('/:id', atletasController.obtenerAtletaPorId);
 

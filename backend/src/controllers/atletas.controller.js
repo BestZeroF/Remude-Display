@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const bcrypt = require('bcryptjs');
 
 const atletasController = {};
 
@@ -24,6 +25,79 @@ const verificarPermisosAtleta = async (id_atleta_param, id_usuario_token, id_rol
     if (id_rol_token === 2 && atleta.id_usuario_entrenador === id_usuario_token) return { permitido: true };
     
     return { error: 'Acceso denegado. No tienes permisos sobre este atleta.', status: 403 };
+};
+
+// POST /api/atletas (Registrar un nuevo atleta - Solo Entrenadores o Admins)
+atletasController.crearAtleta = async (req, res) => {
+    try {
+        const {
+            nombre, apellidos, correo, password,
+            curp, fecha_nacimiento, id_talla
+        } = req.body;
+
+        // 1. Validar que quien hace la petición tenga permisos (Rol 2 = Entrenador o Rol 3 = Admin)
+        if (req.user.id_rol !== 2 && req.user.id_rol !== 3) {
+            return res.status(403).json({ message: 'No tienes permisos para registrar atletas. Solo los entrenadores pueden hacerlo.' });
+        }
+
+        let id_entrenador_asignado = null;
+
+        // 2. Si es un Entrenador (Rol 2), obtenemos su id_entrenador real basado en su token
+        if (req.user.id_rol === 2) {
+            const queryEntrenador = 'SELECT id_entrenador FROM entrenadores WHERE id_usuario = $1';
+            const resultEntrenador = await db.query(queryEntrenador, [req.user.id_usuario]);
+            
+            if (resultEntrenador.rows.length === 0) {
+                return res.status(404).json({ message: 'No se encontró el perfil de entrenador asociado a esta cuenta.' });
+            }
+            id_entrenador_asignado = resultEntrenador.rows[0].id_entrenador;
+        }
+
+        // 3. Encriptar la contraseña inicial generada para el atleta
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 4. Inserción usando CTE (WITH) para asegurar transaccionalidad
+        const query = `
+            WITH nuevo_usuario AS (
+                INSERT INTO usuarios (id_rol, nombre, apellidos, correo, password, estado_cuenta)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id_usuario
+            )
+            INSERT INTO atletas (id_usuario, id_entrenador, id_estatus, id_talla, curp, fecha_nacimiento)
+            VALUES ((SELECT id_usuario FROM nuevo_usuario), $7, 1, $8, $9, $10)
+            RETURNING id_atleta, id_usuario, id_entrenador;
+        `;
+
+        const values = [
+            1, // id_rol: 1 es Atleta según catálogo
+            nombre, apellidos, correo, hashedPassword, true, // estado_cuenta activo
+            id_entrenador_asignado, // El ID del entrenador que lo está registrando
+            id_talla, curp, fecha_nacimiento
+        ];
+
+        const { rows } = await db.query(query, values);
+
+        res.status(201).json({
+            message: 'Atleta registrado y vinculado a tu cuenta exitosamente.',
+            datos: rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error al crear atleta:', error);
+        
+        // Manejo de error de Postgres: Violación de restricción UNIQUE
+        if (error.code === '23505') {
+            return res.status(409).json({ message: 'El correo o la CURP del atleta ya están registrados en el sistema.' });
+        }
+        
+        // Manejo de error de Postgres: Violación de Llave Foránea (ej. id_talla no existe)
+        if (error.code === '23503') {
+            return res.status(400).json({ message: 'Algún dato de catálogo proporcionado (como la talla) no existe en la base de datos.' });
+        }
+
+        res.status(500).json({ message: 'Error interno del servidor al registrar al atleta.' });
+    }
 };
 
 // GET /api/atletas/:id (Perfil completo)
@@ -90,7 +164,7 @@ atletasController.actualizarAtleta = async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar atleta:', error);
         if (error.code === '23503') {
-            return res.status(400).json({ message: 'La talla especificada no es válida.' });
+            return res.status(400).json({ message: 'La talla especificada no es válida o no existe en el catálogo.' });
         }
         res.status(500).json({ message: 'Error interno del servidor al actualizar.' });
     }

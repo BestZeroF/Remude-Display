@@ -49,6 +49,62 @@ authController.login = async (req, res) => {
     }
 };
 
+// POST /registro/atleta (NUEVO)
+authController.registrarAtletaDesdeCero = async (req, res) => {
+    try {
+        const {
+            nombre, apellidos, correo, password,
+            curp, fecha_nacimiento, id_talla
+        } = req.body;
+
+        // Encriptar la contraseña
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Inserción usando CTE (WITH) manteniendo el mismo patrón que en Entrenador
+        const query = `
+            WITH nuevo_usuario AS (
+                INSERT INTO usuarios (id_rol, nombre, apellidos, correo, password, estado_cuenta)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                RETURNING id_usuario
+            )
+            INSERT INTO atletas (id_usuario, id_entrenador, id_estatus, id_talla, curp, fecha_nacimiento)
+            VALUES ((SELECT id_usuario FROM nuevo_usuario), NULL, 1, $7, $8, $9)
+            RETURNING id_atleta, id_usuario;
+        `;
+
+        const values = [
+            1, // id_rol: 1 es Atleta según catálogo
+            nombre, apellidos, correo, hashedPassword, true, // estado_cuenta activo
+            id_talla, curp, fecha_nacimiento
+        ];
+
+        const { rows } = await db.query(query, values);
+        const nuevoAtleta = rows[0];
+
+        // Generar token para que el atleta ya inicie sesión automáticamente (opcional pero recomendado)
+        const token = jwt.sign(
+            { id_usuario: nuevoAtleta.id_usuario, id_rol: 1 },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
+
+        res.status(201).json({
+            message: 'Atleta registrado exitosamente.',
+            token,
+            datos: nuevoAtleta
+        });
+
+    } catch (error) {
+        console.error('Error en registro de atleta:', error);
+        // Manejo de error específico de Postgres: Violación de restricción UNIQUE
+        if (error.code === '23505') {
+            return res.status(409).json({ message: 'El correo o la CURP ya están registrados en el sistema.' });
+        }
+        res.status(500).json({ message: 'Error interno del servidor al registrar.' });
+    }
+};
+
 // POST /registro/entrenador
 authController.registroEntrenador = async (req, res) => {
     try {
@@ -88,7 +144,7 @@ authController.registroEntrenador = async (req, res) => {
 
     } catch (error) {
         console.error('Error en registro de entrenador:', error);
-        // Manejo de error específico de Postgres: Violación de restricción UNIQUE (ej. correo o curp ya existen)
+        // Manejo de error específico de Postgres: Violación de restricción UNIQUE
         if (error.code === '23505') {
             return res.status(409).json({ message: 'El correo o la CURP ya están registrados en el sistema.' });
         }
@@ -104,22 +160,20 @@ authController.recuperarPassword = async (req, res) => {
         const query = 'SELECT id_usuario FROM usuarios WHERE correo = $1 AND estado_cuenta = true';
         const { rows } = await db.query(query, [correo]);
 
-        // Por seguridad, siempre decimos que se envió el correo aunque no exista para evitar enumeración de usuarios
+        // Por seguridad, siempre decimos que se envió el correo aunque no exista
         if (rows.length === 0) {
             return res.json({ message: 'Si el correo existe, se han enviado las instrucciones.' });
         }
 
         const id_usuario = rows[0].id_usuario;
 
-        // Generamos un token temporal de 15 minutos exclusivo para reset
+        // Generamos un token temporal exclusivo para reset
         const resetToken = jwt.sign(
             { id_usuario: id_usuario, reset: true },
             JWT_SECRET,
             { expiresIn: '15m' }
         );
 
-        // NOTA: En un entorno real, aquí usarías Nodemailer para enviar "resetToken" por correo.
-        // Para desarrollo, lo devolvemos en la respuesta.
         res.json({
             message: 'Si el correo existe, se han enviado las instrucciones.',
             dev_token: resetToken // <-- Quitar en producción
