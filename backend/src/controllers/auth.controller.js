@@ -2,12 +2,12 @@ const db = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-// Clave secreta (Asegúrate de tenerla en tu archivo .env, ej: JWT_SECRET=supersecreto)
+// Clave secreta
 const JWT_SECRET = process.env.JWT_SECRET || 'remude_secret_key_2026';
 
 const authController = {};
 
-// POST /login
+// POST /api/auth/login
 authController.login = async (req, res) => {
     try {
         const { correo, password } = req.body;
@@ -40,7 +40,8 @@ authController.login = async (req, res) => {
         res.json({
             message: 'Inicio de sesión exitoso.',
             token,
-            id_rol: usuario.id_rol
+            id_rol: usuario.id_rol,
+            id_usuario: usuario.id_usuario
         });
 
     } catch (error) {
@@ -49,39 +50,41 @@ authController.login = async (req, res) => {
     }
 };
 
-// POST /registro/atleta (Registro rápido sin info completa)
+// ==========================================
+// REGISTRO FASE 1: ATLETAS (Paso 1 del Frontend)
+// ==========================================
+// POST /api/auth/registro/atleta
 authController.registrarAtletaDesdeCero = async (req, res) => {
     try {
-        const {
-            nombre, primer_apellido, segundo_apellido, correo, password,
-            curp, fecha_nacimiento, id_talla
-        } = req.body;
+        // Solo extraemos lo que pide tu pantalla del Paso 1
+        const { nombre, primer_apellido, segundo_apellido, correo, password, curp } = req.body;
 
         // Encriptar la contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Inserción actualizada con los nuevos nombres de columnas
+        // Inserción inicial básica (Genera el usuario y el cascarón del atleta)
         const query = `
             WITH nuevo_usuario AS (
                 INSERT INTO usuarios (id_rol, nombre, primer_apellido, segundo_apellido, correo, password, estado_cuenta)
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id_usuario
             )
-            INSERT INTO atletas (id_usuario, id_entrenador, id_estatus, id_talla, curp, fecha_nacimiento)
-            VALUES ((SELECT id_usuario FROM nuevo_usuario), NULL, 1, $8, $9, $10)
+            INSERT INTO atletas (id_usuario, id_entrenador, id_estatus, curp)
+            VALUES ((SELECT id_usuario FROM nuevo_usuario), NULL, 1, $8)
             RETURNING id_atleta, id_usuario;
         `;
 
         const values = [
-            1, // id_rol: 1 es Atleta según catálogo
-            nombre, primer_apellido, segundo_apellido, correo, hashedPassword, true, // estado_cuenta activo
-            id_talla, curp, fecha_nacimiento
+            1, // id_rol: 1 (Atleta)
+            nombre, primer_apellido, segundo_apellido || null, correo, hashedPassword, true, // true = activo
+            curp
         ];
 
         const { rows } = await db.query(query, values);
         const nuevoAtleta = rows[0];
 
+        // Se genera el Token inmediatamente para que el usuario pueda seguir al Paso 2 sin volver a loguearse
         const token = jwt.sign(
             { id_usuario: nuevoAtleta.id_usuario, id_rol: 1 },
             JWT_SECRET,
@@ -89,21 +92,24 @@ authController.registrarAtletaDesdeCero = async (req, res) => {
         );
 
         res.status(201).json({
-            message: 'Atleta registrado exitosamente.',
+            message: 'Cuenta base de atleta creada exitosamente. Continúa con el Paso 2.',
             token,
-            datos: nuevoAtleta
+            id_usuario: nuevoAtleta.id_usuario
         });
 
     } catch (error) {
-        console.error('Error en registro de atleta:', error);
+        console.error('Error en registro base de atleta:', error);
         if (error.code === '23505') {
             return res.status(409).json({ message: 'El correo o la CURP ya están registrados en el sistema.' });
         }
-        res.status(500).json({ message: 'Error interno del servidor al registrar.' });
+        res.status(500).json({ message: 'Error interno del servidor al crear la cuenta base.' });
     }
 };
 
-// POST /registro/entrenador
+// ==========================================
+// REGISTRO FASE 1: ENTRENADORES
+// ==========================================
+// POST /api/auth/registro/entrenador
 authController.registroEntrenador = async (req, res) => {
     try {
         const { 
@@ -111,11 +117,9 @@ authController.registroEntrenador = async (req, res) => {
             titulo_logro, fecha_logro, descripcion, especialidad, curp 
         } = req.body;
 
-        // Encriptar la contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Inserción actualizada con los nuevos nombres de columnas (primer_apellido, segundo_apellido)
         const query = `
             WITH nuevo_usuario AS (
                 INSERT INTO usuarios (id_rol, nombre, primer_apellido, segundo_apellido, correo, password, estado_cuenta)
@@ -128,28 +132,37 @@ authController.registroEntrenador = async (req, res) => {
         `;
 
         const values = [
-            2, // id_rol: 2 es Entrenador según catálogo
-            nombre, primer_apellido, segundo_apellido, correo, hashedPassword, true, // true = estado_cuenta activo
-            titulo_logro, fecha_logro || null, descripcion || null, especialidad, curp
+            2, // id_rol: 2 (Entrenador)
+            nombre, primer_apellido, segundo_apellido || null, correo, hashedPassword, true, 
+            titulo_logro || null, fecha_logro || null, descripcion || null, especialidad, curp
         ];
 
         const { rows } = await db.query(query, values);
+        const nuevoEntrenador = rows[0];
+
+        // El entrenador también recibe su token directo al registrarse
+        const token = jwt.sign(
+            { id_usuario: nuevoEntrenador.id_usuario, id_rol: 2 },
+            JWT_SECRET,
+            { expiresIn: '8h' }
+        );
 
         res.status(201).json({
-            message: 'Entrenador registrado exitosamente.',
-            datos: rows[0]
+            message: 'Cuenta base de entrenador creada exitosamente.',
+            token,
+            id_usuario: nuevoEntrenador.id_usuario
         });
 
     } catch (error) {
-        console.error('Error en registro de entrenador:', error);
+        console.error('Error en registro base de entrenador:', error);
         if (error.code === '23505') {
             return res.status(409).json({ message: 'El correo o la CURP ya están registrados en el sistema.' });
         }
-        res.status(500).json({ message: 'Error interno del servidor al registrar.' });
+        res.status(500).json({ message: 'Error interno del servidor al crear la cuenta base.' });
     }
 };
 
-// POST /recuperar-password
+// POST /api/auth/recuperar-password
 authController.recuperarPassword = async (req, res) => {
     try {
         const { correo } = req.body;
@@ -180,7 +193,7 @@ authController.recuperarPassword = async (req, res) => {
     }
 };
 
-// PUT /reset-password
+// PUT /api/auth/reset-password
 authController.resetPassword = async (req, res) => {
     try {
         const { token, nueva_password } = req.body;

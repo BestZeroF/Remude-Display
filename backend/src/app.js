@@ -9,6 +9,7 @@ const authRoutes = require('./routes/auth.routes');
 const atletasRoutes = require('./routes/atletas.routes');
 const entrenadoresRoutes = require('./routes/entrenadores.routes');
 const documentosRoutes = require('./routes/documentos.routes');
+const perfilesRoutes = require('./routes/perfiles.routes'); // <-- Nueva ruta compartida
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/atletas', atletasRoutes);
 app.use('/api/entrenadores', entrenadoresRoutes);
 app.use('/api/documentos', documentosRoutes);
+app.use('/api/perfiles', perfilesRoutes); // <-- Conectado al prefijo /api/perfiles
 
 // Endpoint de prueba para saber que todo está funcionando bien
 app.get('/', (req, res) => {

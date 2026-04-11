@@ -1,17 +1,21 @@
-const { Router } = require('express');
-const router = Router();
-const authController = require('../controllers/auth.controller.js');
+const express = require('express');
+const router = express.Router();
+const authController = require('../controllers/auth.controller');
 
-// Ruta para iniciar sesión
+// ==========================================
+// RUTAS DE AUTENTICACIÓN Y REGISTRO BASE
+// (Prefijo en app.js: /api/auth)
+// ==========================================
+
+// Iniciar sesión
 router.post('/login', authController.login);
 
-// Ruta para el registro inicial de un entrenador (y su cuenta de usuario asociada)
+// Registro Fase 1: Cuentas Base (Paso 1 del Frontend)
+router.post('/registro/atleta', authController.registrarAtletaDesdeCero);
 router.post('/registro/entrenador', authController.registroEntrenador);
 
-// Ruta para solicitar la recuperación de contraseña
+// Recuperación de contraseña
 router.post('/recuperar-password', authController.recuperarPassword);
-
-// Ruta para aplicar la nueva contraseña usando el token temporal
 router.put('/reset-password', authController.resetPassword);
 
 module.exports = router;

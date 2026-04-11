@@ -64,7 +64,7 @@ atletasController.crearAtleta = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // MEGA-CONSULTA CTE: Inserta en las 7 tablas de un solo golpe
+        // MEGA-CONSULTA CTE: Inserta en las 7 tablas de un solo golpe (Ajustada a id_usuario)
         const query = `
             WITH nuevo_usuario AS (
                 INSERT INTO usuarios (id_rol, nombre, primer_apellido, segundo_apellido, correo, password, estado_cuenta)
@@ -83,15 +83,15 @@ atletasController.crearAtleta = async (req, res) => {
                 VALUES ((SELECT id_usuario FROM nuevo_usuario), $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
             ),
             nuevo_medico AS (
-                INSERT INTO perfiles_medicos (id_atleta, id_tiposangre, peso_kg, estatura_mts, alergias_condiciones)
-                VALUES ((SELECT id_atleta FROM nuevo_atleta), $27, $28, $29, $30)
+                INSERT INTO perfiles_medicos (id_usuario, id_tiposangre, peso_kg, estatura_mts, alergias_condiciones)
+                VALUES ((SELECT id_usuario FROM nuevo_usuario), $27, $28, $29, $30)
             ),
             nueva_disciplina AS (
                 INSERT INTO atleta_disciplina (id_atleta, id_disciplina)
                 VALUES ((SELECT id_atleta FROM nuevo_atleta), $31)
             )
-            INSERT INTO detalles_atletas (id_atleta, id_categoria, id_talla_camisa, id_talla_pantalon, id_talla_short, id_talla_chamarra, talla_calzado, id_nivel_estudios, institucion_escolar)
-            VALUES ((SELECT id_atleta FROM nuevo_atleta), $32, $33, $34, $35, $36, $37, $38, $39)
+            INSERT INTO detalles_atletas (id_usuario, id_categoria, id_talla_camisa, id_talla_pantalon, id_talla_short, id_talla_chamarra, talla_calzado, id_nivel_estudios, institucion_escolar)
+            VALUES ((SELECT id_usuario FROM nuevo_usuario), $32, $33, $34, $35, $36, $37, $38, $39)
             RETURNING (SELECT id_atleta FROM nuevo_atleta) AS id_atleta_nuevo;
         `;
 
@@ -124,7 +124,7 @@ atletasController.crearAtleta = async (req, res) => {
     }
 };
 
-// GET /api/atletas/:id (Perfil completo con JOINs a todas las tablas)
+// GET /api/atletas/:id (Perfil completo con JOINs a todas las tablas ajustadas a id_usuario)
 atletasController.obtenerAtletaPorId = async (req, res) => {
     try {
         const { id } = req.params;
@@ -149,9 +149,9 @@ atletasController.obtenerAtletaPorId = async (req, res) => {
             LEFT JOIN catalogo_genero gen ON pp.id_genero = gen.id_genero
             LEFT JOIN catalogo_estadocivil ec ON pp.id_estadocivil = ec.id_estadocivil
             LEFT JOIN domicilios dom ON u.id_usuario = dom.id_usuario
-            LEFT JOIN perfiles_medicos pm ON a.id_atleta = pm.id_atleta
+            LEFT JOIN perfiles_medicos pm ON u.id_usuario = pm.id_usuario
             LEFT JOIN catalogo_tiposangre ts ON pm.id_tiposangre = ts.id_tiposangre
-            LEFT JOIN detalles_atletas da ON a.id_atleta = da.id_atleta
+            LEFT JOIN detalles_atletas da ON u.id_usuario = da.id_usuario
             LEFT JOIN catalogo_categorias cat ON da.id_categoria = cat.id_categoria
             LEFT JOIN catalogo_nivelestudios ne ON da.id_nivel_estudios = ne.id_nivel
             LEFT JOIN catalogo_tallas tc ON da.id_talla_camisa = tc.id_talla

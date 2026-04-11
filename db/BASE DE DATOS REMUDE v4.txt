@@ -1,0 +1,221 @@
+-- ==============================================================================
+-- BASE DE DATOS REMUDE - VERSIÓN 4.0 (PROGRESSIVE PROFILING)
+-- Arquitectura Relacional 1:1 Universal
+-- ==============================================================================
+
+-- ------------------------------------------------------------------------------
+-- 1. CATÁLOGOS (Diccionarios de datos estáticos)
+-- ------------------------------------------------------------------------------
+CREATE TABLE catalogo_roles (
+    id_rol SERIAL PRIMARY KEY,
+    nombre_rol VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE catalogo_estatus (
+    id_estatus SERIAL PRIMARY KEY,
+    nombre_estatus VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE catalogo_tallas (
+    id_talla SERIAL PRIMARY KEY,
+    nomenclatura VARCHAR(10) NOT NULL
+);
+
+CREATE TABLE catalogo_tiposdocumento (
+    id_tipodoc SERIAL PRIMARY KEY,
+    nombre_tipo VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE catalogo_tiponotificacion (
+    id_tiponotif SERIAL PRIMARY KEY,
+    nombre_tipo VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE disciplinas (
+    id_disciplina SERIAL PRIMARY KEY,
+    nombre_disciplina VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE catalogo_sexo (
+    id_sexo SERIAL PRIMARY KEY,
+    nombre_sexo VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE catalogo_genero (
+    id_genero SERIAL PRIMARY KEY,
+    nombre_genero VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE catalogo_estadocivil (
+    id_estadocivil SERIAL PRIMARY KEY,
+    nombre_estado VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE catalogo_tiposangre (
+    id_tiposangre SERIAL PRIMARY KEY,
+    grupo_sanguineo VARCHAR(10) NOT NULL
+);
+
+CREATE TABLE catalogo_categorias (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre_categoria VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE catalogo_nivelestudios (
+    id_nivel SERIAL PRIMARY KEY,
+    nombre_nivel VARCHAR(100) NOT NULL
+);
+
+-- ------------------------------------------------------------------------------
+-- 2. ENTIDADES PRINCIPALES (Núcleo del Sistema)
+-- ------------------------------------------------------------------------------
+CREATE TABLE usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    id_rol INT NOT NULL REFERENCES catalogo_roles(id_rol),
+    nombre VARCHAR(100) NOT NULL,
+    primer_apellido VARCHAR(100) NOT NULL,
+    segundo_apellido VARCHAR(100),
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    estado_cuenta BOOLEAN DEFAULT TRUE
+);
+
+CREATE TABLE entrenadores (
+    id_entrenador SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    titulo_logro VARCHAR(255),
+    fecha_logro DATE,
+    descripcion TEXT,
+    especialidad VARCHAR(150),
+    curp VARCHAR(18) UNIQUE NOT NULL
+);
+
+CREATE TABLE administrativos (
+    id_admin SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    nivel_permisos INT DEFAULT 1
+);
+
+CREATE TABLE atletas (
+    id_atleta SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_entrenador INT REFERENCES entrenadores(id_entrenador) ON DELETE SET NULL,
+    id_estatus INT NOT NULL DEFAULT 1 REFERENCES catalogo_estatus(id_estatus),
+    curp VARCHAR(18) UNIQUE NOT NULL,
+    fecha_nacimiento DATE -- Modificado en v4.0: Permite NULL para Progressive Profiling
+);
+
+-- ------------------------------------------------------------------------------
+-- 3. MÓDULOS DE PERFIL (Relación 1:1 Universal con Usuarios)
+-- ------------------------------------------------------------------------------
+CREATE TABLE domicilios (
+    id_domicilio SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    celular VARCHAR(20),
+    telefono_fijo VARCHAR(20),
+    codigo_postal VARCHAR(10),
+    colonia VARCHAR(150),
+    direccion_calle VARCHAR(200),
+    cruzamientos VARCHAR(200),
+    num_exterior VARCHAR(50),
+    num_interior VARCHAR(50),
+    manzana VARCHAR(50),
+    lote VARCHAR(50)
+);
+
+CREATE TABLE perfiles_personales (
+    id_perfil SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_sexo INT REFERENCES catalogo_sexo(id_sexo),
+    id_genero INT REFERENCES catalogo_genero(id_genero),
+    id_estadocivil INT REFERENCES catalogo_estadocivil(id_estadocivil),
+    rfc VARCHAR(13) UNIQUE,
+    nss VARCHAR(20) UNIQUE,
+    clave_ine VARCHAR(50) UNIQUE,
+    lugar_nacimiento VARCHAR(150)
+);
+
+CREATE TABLE perfiles_medicos (
+    id_perfil_medico SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_tiposangre INT REFERENCES catalogo_tiposangre(id_tiposangre),
+    peso_kg DECIMAL(5,2),
+    estatura_mts DECIMAL(4,2),
+    alergias_condiciones TEXT
+);
+
+CREATE TABLE detalles_atletas (
+    id_detalle SERIAL PRIMARY KEY,
+    id_usuario INT UNIQUE NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_categoria INT REFERENCES catalogo_categorias(id_categoria),
+    id_talla_camisa INT REFERENCES catalogo_tallas(id_talla),
+    id_talla_pantalon INT REFERENCES catalogo_tallas(id_talla),
+    id_talla_short INT REFERENCES catalogo_tallas(id_talla),
+    id_talla_chamarra INT REFERENCES catalogo_tallas(id_talla),
+    talla_calzado VARCHAR(10),
+    id_nivel_estudios INT REFERENCES catalogo_nivelestudios(id_nivel),
+    institucion_escolar VARCHAR(200)
+);
+
+-- ------------------------------------------------------------------------------
+-- 4. TABLAS INTERMEDIAS Y MÓDULOS OPERATIVOS
+-- ------------------------------------------------------------------------------
+CREATE TABLE atleta_disciplina (
+    id_atleta INT NOT NULL REFERENCES atletas(id_atleta) ON DELETE CASCADE,
+    id_disciplina INT NOT NULL REFERENCES disciplinas(id_disciplina) ON DELETE CASCADE,
+    PRIMARY KEY (id_atleta, id_disciplina)
+);
+
+CREATE TABLE documentos (
+    id_documento SERIAL PRIMARY KEY,
+    id_usuario INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_tipodoc INT NOT NULL REFERENCES catalogo_tiposdocumento(id_tipodoc),
+    id_estatus INT NOT NULL REFERENCES catalogo_estatus(id_estatus),
+    ruta_archivo VARCHAR(500) NOT NULL,
+    motivo_rechazo TEXT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_vencimiento DATE
+);
+
+CREATE TABLE espacios_deportivos (
+    id_espacio SERIAL PRIMARY KEY,
+    id_estatus INT REFERENCES catalogo_estatus(id_estatus),
+    nombre_espacio VARCHAR(150) NOT NULL,
+    ubicacion TEXT NOT NULL
+);
+
+CREATE TABLE eventos (
+    id_evento SERIAL PRIMARY KEY,
+    id_admin INT REFERENCES administrativos(id_admin) ON DELETE SET NULL,
+    nombre_evento VARCHAR(200) NOT NULL,
+    fecha_inicio TIMESTAMP NOT NULL,
+    fecha_fin TIMESTAMP NOT NULL,
+    descripcion TEXT
+);
+
+CREATE TABLE historial_deportivo (
+    id_historial SERIAL PRIMARY KEY,
+    id_atleta INT NOT NULL REFERENCES atletas(id_atleta) ON DELETE CASCADE,
+    descripcion TEXT NOT NULL,
+    fecha_evento DATE NOT NULL
+);
+
+CREATE TABLE solicitudes_reasignacion (
+    id_solicitud SERIAL PRIMARY KEY,
+    id_usuario INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_atleta INT NOT NULL REFERENCES atletas(id_atleta) ON DELETE CASCADE,
+    id_entrenador INT NOT NULL REFERENCES entrenadores(id_entrenador) ON DELETE CASCADE,
+    id_estatus INT NOT NULL DEFAULT 1 REFERENCES catalogo_estatus(id_estatus),
+    motivo TEXT NOT NULL,
+    fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE notificaciones (
+    id_notificaciones SERIAL PRIMARY KEY,
+    id_usuario INT NOT NULL REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
+    id_tiponotif INT REFERENCES catalogo_tiponotificacion(id_tiponotif),
+    titulo VARCHAR(150) NOT NULL,
+    mensaje TEXT NOT NULL,
+    leido BOOLEAN DEFAULT FALSE,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
