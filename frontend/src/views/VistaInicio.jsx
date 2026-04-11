@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 
 export default function VistaInicio({ cambiarVista }) {
   return (
-    <div className="w-full max-w-2xl animate-fade-in mt-4 md:mt-8">
+    <div className="w-full max-w-2xl animate-fade-in mt-2 md:mt-4">
       <h1 className="font-black uppercase tracking-tighter">
         <span className="block text-gray-900 text-7xl md:text-[8rem] leading-none mb-2 md:mb-4">REMUDE</span>
         <span className="block text-[#7a2031] text-3xl md:text-[3.5rem] leading-[0.85] mt-4">REGISTRO MUNICIPAL</span>
