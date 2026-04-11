@@ -1,29 +1,34 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowLeft, User } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, User, CreditCard } from 'lucide-react';
 
 export default function VistaRegistro({ cambiarVista }) {
   const [datosFormulario, setDatosFormulario] = useState({ 
     nombre: '', 
-    apellidos: '', 
+    apellidoPaterno: '', 
+    apellidoMaterno: '', 
     correo: '', 
+    curp: '', 
     contrasena: '',
     confirmarContrasena: '' 
   });
   const [errores, setErrores] = useState({});
+  const [cargando, setCargando] = useState(false);
 
-  const manejarEnvio = (e) => {
+  const manejarEnvio = async (e) => {
     e.preventDefault();
     let nuevosErrores = {};
     
-    if (!datosFormulario.nombre) nuevosErrores.nombre = 'El nombre es obligatorio';
-    if (!datosFormulario.apellidos) nuevosErrores.apellidos = 'Los apellidos son obligatorios';
-    if (!datosFormulario.correo) nuevosErrores.correo = 'El correo es obligatorio';
-    if (!datosFormulario.contrasena) nuevosErrores.contrasena = 'La contraseña es obligatoria';
+    if (!datosFormulario.nombre) nuevosErrores.nombre = 'Obligatorio';
+    if (!datosFormulario.apellidoPaterno) nuevosErrores.apellidoPaterno = 'Obligatorio';
+    if (!datosFormulario.apellidoMaterno) nuevosErrores.apellidoMaterno = 'Obligatorio';
+    if (!datosFormulario.correo) nuevosErrores.correo = 'Obligatorio';
+    if (!datosFormulario.curp) nuevosErrores.curp = 'Obligatorio';
+    if (!datosFormulario.contrasena) nuevosErrores.contrasena = 'Obligatorio';
     
     if (!datosFormulario.confirmarContrasena) {
-      nuevosErrores.confirmarContrasena = 'Debes confirmar tu contraseña';
+      nuevosErrores.confirmarContrasena = 'Confirmar';
     } else if (datosFormulario.contrasena !== datosFormulario.confirmarContrasena) {
-      nuevosErrores.confirmarContrasena = 'Las contraseñas no coinciden';
+      nuevosErrores.confirmarContrasena = 'No coinciden';
     }
 
     if (Object.keys(nuevosErrores).length > 0) {
@@ -31,9 +36,54 @@ export default function VistaRegistro({ cambiarVista }) {
       return;
     }
 
-    console.log('Datos listos para la API:', datosFormulario);
-    alert('Frontend listo. Falta conectar con el Backend para guardar en BD.');
-    cambiarVista('login');
+    setCargando(true);
+    setErrores({});
+
+    try {
+      const URL_VALIDAR = `http://localhost:3000/api/auth/validar-curp/${datosFormulario.curp}`;
+      const resValidacion = await fetch(URL_VALIDAR);
+      
+      if (resValidacion.ok) {
+        const dataValidacion = await resValidacion.json();
+        if (dataValidacion.existe) {
+          setErrores({ curp: 'Esta CURP ya se encuentra registrada' });
+          setCargando(false);
+          return;
+        }
+      }
+
+      const URL_REGISTRO = 'http://localhost:3000/api/auth/registro/entrenador';
+      const respuesta = await fetch(URL_REGISTRO, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: datosFormulario.nombre,
+          apellido_paterno: datosFormulario.apellidoPaterno, // Enviado en formato snake_case esperado por bd
+          apellido_materno: datosFormulario.apellidoMaterno,
+          correo: datosFormulario.correo,
+          curp: datosFormulario.curp,
+          password: datosFormulario.contrasena,
+          titulo_logro: "Pendiente",
+          fecha_logro: "2024-01-01",
+          descripcion: "Pendiente",
+          especialidad: "Pendiente"
+        })
+      });
+
+      const data = await respuesta.json();
+
+      if (respuesta.ok || respuesta.status === 201) {
+        alert('Cuenta creada exitosamente. Por favor, inicia sesión.');
+        cambiarVista('login');
+      } else {
+        setErrores({ general: data.message || 'Hubo un error al registrar la cuenta' });
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      setErrores({ general: 'Error conectando con el servidor' });
+    } finally {
+      setCargando(false);
+    }
   };
 
   const manejarCambio = (campo, valor) => {
@@ -49,46 +99,85 @@ export default function VistaRegistro({ cambiarVista }) {
       <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-1">Registro</h2>
       <p className="text-gray-500 mb-6 font-light text-sm">Crea tu cuenta de entrenador</p>
 
+      {errores.general && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm font-bold text-center">
+          {errores.general}
+        </div>
+      )}
+
       <form onSubmit={manejarEnvio} className="space-y-3" noValidate>
+        {/* Fila 1: Nombre */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre(s)</label>
+          <div className="relative shadow-sm rounded-xl">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className={`h-4 w-4 ${errores.nombre ? 'text-red-400' : 'text-gray-400'}`} />
+            </div>
+            <input
+              type="text" placeholder="Ej. Juan Carlos"
+              className={`block w-full pl-10 pr-3 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.nombre ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+              value={datosFormulario.nombre}
+              onChange={(e) => manejarCambio('nombre', e.target.value)}
+            />
+          </div>
+          {errores.nombre && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.nombre}</p>}
+        </div>
+
+        {/* Fila 2: Apellidos separados */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre</label>
-            <div className="relative shadow-sm rounded-xl">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className={`h-4 w-4 ${errores.nombre ? 'text-red-400' : 'text-gray-400'}`} />
-              </div>
-              <input
-                type="text" placeholder="Juan"
-                className={`block w-full pl-10 pr-3 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.nombre ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
-                value={datosFormulario.nombre}
-                onChange={(e) => manejarCambio('nombre', e.target.value)}
-              />
-            </div>
-            {errores.nombre && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.nombre}</p>}
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Apellidos</label>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Apellido Paterno</label>
             <div className="relative shadow-sm rounded-xl">
               <input
                 type="text" placeholder="Pérez"
-                className={`block w-full px-4 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.apellidos ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
-                value={datosFormulario.apellidos}
-                onChange={(e) => manejarCambio('apellidos', e.target.value)}
+                className={`block w-full px-4 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.apellidoPaterno ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+                value={datosFormulario.apellidoPaterno}
+                onChange={(e) => manejarCambio('apellidoPaterno', e.target.value)}
               />
             </div>
-            {errores.apellidos && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.apellidos}</p>}
+            {errores.apellidoPaterno && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.apellidoPaterno}</p>}
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Apellido Materno</label>
+            <div className="relative shadow-sm rounded-xl">
+              <input
+                type="text" placeholder="López"
+                className={`block w-full px-4 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.apellidoMaterno ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+                value={datosFormulario.apellidoMaterno}
+                onChange={(e) => manejarCambio('apellidoMaterno', e.target.value)}
+              />
+            </div>
+            {errores.apellidoMaterno && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.apellidoMaterno}</p>}
           </div>
         </div>
 
+        {/* Fila 3: CURP */}
+        <div>
+          <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">CURP</label>
+          <div className="relative shadow-sm rounded-xl">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <CreditCard className={`h-4 w-4 ${errores.curp ? 'text-red-400' : 'text-gray-400'}`} />
+            </div>
+            <input
+              type="text" placeholder="18 Caracteres" maxLength="18"
+              className={`block w-full pl-10 pr-3 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 uppercase font-mono ${errores.curp ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+              value={datosFormulario.curp}
+              onChange={(e) => manejarCambio('curp', e.target.value.toUpperCase())}
+            />
+          </div>
+          {errores.curp && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.curp}</p>}
+        </div>
+
+        {/* Fila 4: Correo */}
         <div>
           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Correo electrónico</label>
           <div className="relative shadow-sm rounded-xl">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Mail className={`h-4 w-4 ${errores.correo ? 'text-red-400' : 'text-gray-400'}`} />
             </div>
             <input
               type="email" placeholder="tu@correo.com"
-              className={`block w-full pl-11 pr-4 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.correo ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+              className={`block w-full pl-10 pr-3 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.correo ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
               value={datosFormulario.correo}
               onChange={(e) => manejarCambio('correo', e.target.value)}
             />
@@ -96,16 +185,17 @@ export default function VistaRegistro({ cambiarVista }) {
           {errores.correo && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.correo}</p>}
         </div>
 
-        <div className="grid grid-cols-1 gap-3">
+        {/* Fila 5: Contraseñas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Contraseña</label>
             <div className="relative shadow-sm rounded-xl">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className={`h-4 w-4 ${errores.contrasena ? 'text-red-400' : 'text-gray-400'}`} />
               </div>
               <input
                 type="password" placeholder="••••••••"
-                className={`block w-full pl-11 pr-4 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.contrasena ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+                className={`block w-full pl-10 pr-3 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.contrasena ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
                 value={datosFormulario.contrasena}
                 onChange={(e) => manejarCambio('contrasena', e.target.value)}
               />
@@ -114,14 +204,14 @@ export default function VistaRegistro({ cambiarVista }) {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Confirmar contraseña</label>
+            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Confirmar clave</label>
             <div className="relative shadow-sm rounded-xl">
-              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Lock className={`h-4 w-4 ${errores.confirmarContrasena ? 'text-red-400' : 'text-gray-400'}`} />
               </div>
               <input
                 type="password" placeholder="••••••••"
-                className={`block w-full pl-11 pr-4 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.confirmarContrasena ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
+                className={`block w-full pl-10 pr-3 py-2.5 bg-white rounded-xl outline-none transition-all text-sm text-gray-800 ${errores.confirmarContrasena ? 'ring-2 ring-red-500' : 'focus:ring-2 focus:ring-[#c2a649]'}`}
                 value={datosFormulario.confirmarContrasena}
                 onChange={(e) => manejarCambio('confirmarContrasena', e.target.value)}
               />
@@ -130,8 +220,12 @@ export default function VistaRegistro({ cambiarVista }) {
           </div>
         </div>
 
-        <button type="submit" className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl shadow-lg font-bold text-white bg-[#c2a649] hover:bg-[#a0883b] transition-all transform hover:scale-105 mt-4">
-          Crear cuenta
+        <button 
+          type="submit" 
+          disabled={cargando}
+          className={`w-full flex justify-center items-center py-3.5 px-4 rounded-xl shadow-lg font-bold text-white transition-all transform ${cargando ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#c2a649] hover:bg-[#a0883b] hover:scale-105'} mt-4`}
+        >
+          {cargando ? 'Guardando...' : 'Crear cuenta'}
         </button>
       </form>
 
