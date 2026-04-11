@@ -21,7 +21,6 @@ documentosController.subirDocumento = async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
             RETURNING *
         `;
-        // Si no envían fecha de vencimiento (ej. acta de nacimiento), se guarda como null
         const values = [id_usuario, id_tipodoc, id_estatus, ruta_archivo, fecha_vencimiento || null];
         
         const { rows } = await db.query(query, values);
@@ -43,7 +42,6 @@ documentosController.obtenerDocumentosUsuario = async (req, res) => {
         const id_usuario_req = req.user.id_usuario;
         const id_rol = req.user.id_rol;
 
-        // Seguridad: Un Atleta (rol 1) solo puede ver sus propios documentos.
         if (id_rol === 1 && parseInt(id_usuario_param) !== id_usuario_req) {
             return res.status(403).json({ message: 'Acceso denegado. No tienes permiso para ver estos documentos.' });
         }
@@ -73,7 +71,6 @@ documentosController.revisarDocumento = async (req, res) => {
         const { id_estatus, motivo_rechazo } = req.body;
         const id_rol = req.user.id_rol;
 
-        // Seguridad: Solo los Administradores (rol 3) pueden cambiar el estatus de un documento.
         if (id_rol !== 3) {
             return res.status(403).json({ message: 'Acceso denegado. Se requieren privilegios de administrador.' });
         }
@@ -98,7 +95,6 @@ documentosController.revisarDocumento = async (req, res) => {
         });
     } catch (error) {
         console.error('Error al revisar documento:', error);
-        // Manejo de error de llave foránea (si mandan un id_estatus que no existe en catalogo_estatus)
         if (error.code === '23503') {
             return res.status(400).json({ message: 'El estatus proporcionado no es válido.' });
         }
@@ -111,15 +107,13 @@ documentosController.obtenerVencimientos = async (req, res) => {
     try {
         const id_rol = req.user.id_rol;
 
-        // Seguridad: Solo los Administradores (rol 3) ven los vencimientos globales.
-        // (Podrías expandir esto para que el Entrenador vea los de sus atletas).
         if (id_rol !== 3) {
             return res.status(403).json({ message: 'Acceso denegado.' });
         }
 
-        // Busca documentos que venzan en los próximos 30 días o que ya estén vencidos
+        // CORRECCIÓN APLICADA: Cambiamos u.apellidos por u.primer_apellido, u.segundo_apellido
         const query = `
-            SELECT d.id_documento, d.fecha_vencimiento, u.nombre, u.apellidos, u.correo, td.nombre_tipo
+            SELECT d.id_documento, d.fecha_vencimiento, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, td.nombre_tipo
             FROM documentos d
             INNER JOIN usuarios u ON d.id_usuario = u.id_usuario
             INNER JOIN catalogo_tiposdocumento td ON d.id_tipodoc = td.id_tipodoc

@@ -2,14 +2,14 @@ const db = require('../config/db');
 
 const entrenadoresController = {};
 
-// GET /api/entrenadores/dashboard (Reconstruido con esquema exacto)
+// GET /api/entrenadores/dashboard
 entrenadoresController.obtenerDashboard = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
 
-        // 1. Obtener info del entrenador
+        // 1. Obtener info del entrenador (Actualizado con primer y segundo apellido)
         const queryEntrenador = `
-            SELECT e.id_entrenador, e.titulo_logro, e.especialidad, u.nombre, u.apellidos
+            SELECT e.id_entrenador, e.titulo_logro, e.especialidad, u.nombre, u.primer_apellido, u.segundo_apellido
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
             WHERE e.id_usuario = $1
@@ -30,7 +30,7 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
         `;
         const { rows: notificaciones } = await db.query(queryNotif, [id_usuario]);
 
-        // 3. Obtener clasificación de atletas por estatus (Activos, Inactivos, etc.)
+        // 3. Obtener clasificación de atletas por estatus
         const queryAtletas = `
             SELECT ce.nombre_estatus, COUNT(a.id_atleta) as total
             FROM atletas a
@@ -56,10 +56,10 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
 entrenadoresController.listarEntrenadores = async (req, res) => {
     try {
         const query = `
-            SELECT e.id_entrenador, e.especialidad, e.titulo_logro, u.nombre, u.apellidos, u.correo, u.estado_cuenta
+            SELECT e.id_entrenador, e.especialidad, e.titulo_logro, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
-            ORDER BY u.apellidos ASC
+            ORDER BY u.primer_apellido ASC
         `;
         const { rows } = await db.query(query);
         res.json(rows);
@@ -75,7 +75,7 @@ entrenadoresController.obtenerEntrenadorPorId = async (req, res) => {
         const { id } = req.params;
         const query = `
             SELECT e.id_entrenador, e.titulo_logro, e.fecha_logro, e.descripcion, e.especialidad, e.curp,
-                   u.nombre, u.apellidos, u.correo, u.estado_cuenta
+                   u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
             WHERE e.id_entrenador = $1
@@ -98,7 +98,7 @@ entrenadoresController.actualizarEntrenador = async (req, res) => {
         const { id } = req.params; // id_entrenador
         const id_usuario_token = req.user.id_usuario;
         const id_rol = req.user.id_rol;
-        const { nombre, apellidos, titulo_logro, descripcion, especialidad } = req.body;
+        const { nombre, primer_apellido, segundo_apellido, titulo_logro, descripcion, especialidad } = req.body;
 
         // Seguridad: Validar que el usuario que hace la petición sea el dueño del perfil o un Admin (rol 3)
         const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_entrenador = $1';
@@ -112,22 +112,27 @@ entrenadoresController.actualizarEntrenador = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para modificar este perfil.' });
         }
 
-        // Actualizamos las 2 tablas usando una CTE para asegurar consistencia
+        // Actualizamos las 2 tablas usando una CTE y COALESCE para no sobreescribir con nulos si solo envían 1 dato
         const query = `
             WITH actualizacion_usuario AS (
                 UPDATE usuarios
-                SET nombre = $1, apellidos = $2
-                WHERE id_usuario = (SELECT id_usuario FROM entrenadores WHERE id_entrenador = $3)
-                RETURNING id_usuario, nombre, apellidos
+                SET nombre = COALESCE($1, nombre),
+                    primer_apellido = COALESCE($2, primer_apellido),
+                    segundo_apellido = COALESCE($3, segundo_apellido)
+                WHERE id_usuario = (SELECT id_usuario FROM entrenadores WHERE id_entrenador = $4)
+                RETURNING id_usuario, nombre, primer_apellido, segundo_apellido
             )
             UPDATE entrenadores
-            SET titulo_logro = $4, descripcion = $5, especialidad = $6
-            WHERE id_entrenador = $3
+            SET titulo_logro = COALESCE($5, titulo_logro), 
+                descripcion = COALESCE($6, descripcion), 
+                especialidad = COALESCE($7, especialidad)
+            WHERE id_entrenador = $4
             RETURNING id_entrenador, titulo_logro, descripcion, especialidad,
                       (SELECT nombre FROM actualizacion_usuario),
-                      (SELECT apellidos FROM actualizacion_usuario);
+                      (SELECT primer_apellido FROM actualizacion_usuario),
+                      (SELECT segundo_apellido FROM actualizacion_usuario);
         `;
-        const values = [nombre, apellidos, id, titulo_logro, descripcion, especialidad];
+        const values = [nombre, primer_apellido, segundo_apellido, id, titulo_logro, descripcion, especialidad];
         
         const { rows } = await db.query(query, values);
 
@@ -161,17 +166,18 @@ entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para ver los atletas de este grupo.' });
         }
 
-        // Obtener la lista detallada de atletas
+        // Obtener la lista detallada de atletas (Actualizado con JOIN a detalles_atletas)
         const query = `
             SELECT a.id_atleta, a.curp, a.fecha_nacimiento, 
-                   u.nombre, u.apellidos, u.correo, u.estado_cuenta,
-                   ce.nombre_estatus, ct.nomenclatura AS talla
+                   u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta,
+                   ce.nombre_estatus, tc.nomenclatura AS talla_camisa
             FROM atletas a
             INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
             INNER JOIN catalogo_estatus ce ON a.id_estatus = ce.id_estatus
-            INNER JOIN catalogo_tallas ct ON a.id_talla = ct.id_talla
+            LEFT JOIN detalles_atletas da ON a.id_atleta = da.id_atleta
+            LEFT JOIN catalogo_tallas tc ON da.id_talla_camisa = tc.id_talla
             WHERE a.id_entrenador = $1
-            ORDER BY u.apellidos ASC
+            ORDER BY u.primer_apellido ASC
         `;
         
         const { rows } = await db.query(query, [id]);

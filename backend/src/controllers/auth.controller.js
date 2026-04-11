@@ -49,11 +49,11 @@ authController.login = async (req, res) => {
     }
 };
 
-// POST /registro/atleta (NUEVO)
+// POST /registro/atleta (Registro rápido sin info completa)
 authController.registrarAtletaDesdeCero = async (req, res) => {
     try {
         const {
-            nombre, apellidos, correo, password,
+            nombre, primer_apellido, segundo_apellido, correo, password,
             curp, fecha_nacimiento, id_talla
         } = req.body;
 
@@ -61,28 +61,27 @@ authController.registrarAtletaDesdeCero = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Inserción usando CTE (WITH) manteniendo el mismo patrón que en Entrenador
+        // Inserción actualizada con los nuevos nombres de columnas
         const query = `
             WITH nuevo_usuario AS (
-                INSERT INTO usuarios (id_rol, nombre, apellidos, correo, password, estado_cuenta)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO usuarios (id_rol, nombre, primer_apellido, segundo_apellido, correo, password, estado_cuenta)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id_usuario
             )
             INSERT INTO atletas (id_usuario, id_entrenador, id_estatus, id_talla, curp, fecha_nacimiento)
-            VALUES ((SELECT id_usuario FROM nuevo_usuario), NULL, 1, $7, $8, $9)
+            VALUES ((SELECT id_usuario FROM nuevo_usuario), NULL, 1, $8, $9, $10)
             RETURNING id_atleta, id_usuario;
         `;
 
         const values = [
             1, // id_rol: 1 es Atleta según catálogo
-            nombre, apellidos, correo, hashedPassword, true, // estado_cuenta activo
+            nombre, primer_apellido, segundo_apellido, correo, hashedPassword, true, // estado_cuenta activo
             id_talla, curp, fecha_nacimiento
         ];
 
         const { rows } = await db.query(query, values);
         const nuevoAtleta = rows[0];
 
-        // Generar token para que el atleta ya inicie sesión automáticamente (opcional pero recomendado)
         const token = jwt.sign(
             { id_usuario: nuevoAtleta.id_usuario, id_rol: 1 },
             JWT_SECRET,
@@ -97,7 +96,6 @@ authController.registrarAtletaDesdeCero = async (req, res) => {
 
     } catch (error) {
         console.error('Error en registro de atleta:', error);
-        // Manejo de error específico de Postgres: Violación de restricción UNIQUE
         if (error.code === '23505') {
             return res.status(409).json({ message: 'El correo o la CURP ya están registrados en el sistema.' });
         }
@@ -109,7 +107,7 @@ authController.registrarAtletaDesdeCero = async (req, res) => {
 authController.registroEntrenador = async (req, res) => {
     try {
         const { 
-            nombre, apellidos, correo, password, 
+            nombre, primer_apellido, segundo_apellido, correo, password, 
             titulo_logro, fecha_logro, descripcion, especialidad, curp 
         } = req.body;
 
@@ -117,22 +115,22 @@ authController.registroEntrenador = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Inserción usando CTE (WITH) para asegurar transaccionalidad
+        // Inserción actualizada con los nuevos nombres de columnas (primer_apellido, segundo_apellido)
         const query = `
             WITH nuevo_usuario AS (
-                INSERT INTO usuarios (id_rol, nombre, apellidos, correo, password, estado_cuenta)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO usuarios (id_rol, nombre, primer_apellido, segundo_apellido, correo, password, estado_cuenta)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 RETURNING id_usuario
             )
             INSERT INTO entrenadores (id_usuario, titulo_logro, fecha_logro, descripcion, especialidad, curp)
-            VALUES ((SELECT id_usuario FROM nuevo_usuario), $7, $8, $9, $10, $11)
+            VALUES ((SELECT id_usuario FROM nuevo_usuario), $8, $9, $10, $11, $12)
             RETURNING id_entrenador, id_usuario;
         `;
 
         const values = [
             2, // id_rol: 2 es Entrenador según catálogo
-            nombre, apellidos, correo, hashedPassword, true, // true = estado_cuenta activo
-            titulo_logro, fecha_logro, descripcion, especialidad, curp
+            nombre, primer_apellido, segundo_apellido, correo, hashedPassword, true, // true = estado_cuenta activo
+            titulo_logro, fecha_logro || null, descripcion || null, especialidad, curp
         ];
 
         const { rows } = await db.query(query, values);
@@ -144,7 +142,6 @@ authController.registroEntrenador = async (req, res) => {
 
     } catch (error) {
         console.error('Error en registro de entrenador:', error);
-        // Manejo de error específico de Postgres: Violación de restricción UNIQUE
         if (error.code === '23505') {
             return res.status(409).json({ message: 'El correo o la CURP ya están registrados en el sistema.' });
         }
@@ -160,14 +157,12 @@ authController.recuperarPassword = async (req, res) => {
         const query = 'SELECT id_usuario FROM usuarios WHERE correo = $1 AND estado_cuenta = true';
         const { rows } = await db.query(query, [correo]);
 
-        // Por seguridad, siempre decimos que se envió el correo aunque no exista
         if (rows.length === 0) {
             return res.json({ message: 'Si el correo existe, se han enviado las instrucciones.' });
         }
 
         const id_usuario = rows[0].id_usuario;
 
-        // Generamos un token temporal exclusivo para reset
         const resetToken = jwt.sign(
             { id_usuario: id_usuario, reset: true },
             JWT_SECRET,
@@ -176,7 +171,7 @@ authController.recuperarPassword = async (req, res) => {
 
         res.json({
             message: 'Si el correo existe, se han enviado las instrucciones.',
-            dev_token: resetToken // <-- Quitar en producción
+            dev_token: resetToken 
         });
 
     } catch (error) {
@@ -194,7 +189,6 @@ authController.resetPassword = async (req, res) => {
             return res.status(400).json({ message: 'Token y nueva contraseña son requeridos.' });
         }
 
-        // Verificar el token temporal
         let decoded;
         try {
             decoded = jwt.verify(token, JWT_SECRET);
@@ -207,11 +201,9 @@ authController.resetPassword = async (req, res) => {
 
         const id_usuario = decoded.id_usuario;
 
-        // Encriptar la nueva contraseña
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(nueva_password, salt);
 
-        // Actualizar la base de datos
         const query = 'UPDATE usuarios SET password = $1 WHERE id_usuario = $2 RETURNING id_usuario';
         const { rows } = await db.query(query, [hashedPassword, id_usuario]);
 
