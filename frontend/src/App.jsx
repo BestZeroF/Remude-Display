@@ -11,13 +11,15 @@ import logoRojo from './assets/logo-rojo-remude.png';
 
 export default function App() {
   const [vistaActual, setVistaActual] = useState('inicio');
+  
+  // ESTADO GLOBAL: Aquí guardamos los datos del usuario cuando se loguea exitosamente
+  const [usuarioAutenticado, setUsuarioAutenticado] = useState(null);
 
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 font-sans text-gray-900 selection:bg-[#7a2031] selection:text-white relative overflow-x-hidden">
       
       {['inicio', 'login', 'registro', 'acercaDe'].includes(vistaActual) && (
         <div className="min-h-screen flex flex-col relative">
-          {/* Se ajustó el padding del header y se cambió a h-16/h-20 para balancearlo */}
           <header className="w-full pt-6 pb-2 px-8 md:px-16 flex justify-between items-center z-10">
             <div className="cursor-pointer" onClick={() => setVistaActual('inicio')}>
               <img src={logoRojo} alt="REMUDE" className="h-16 md:h-20 object-contain transition-transform hover:scale-105" />
@@ -26,7 +28,7 @@ export default function App() {
 
           <main className="grow flex items-start pt-0 md:pt-2 w-full max-w-7xl mx-auto px-8 md:px-16 z-10">
             {vistaActual === 'inicio' && <VistaInicio cambiarVista={setVistaActual} />}
-            {vistaActual === 'login' && <VistaLogin cambiarVista={setVistaActual} />}
+            {vistaActual === 'login' && <VistaLogin cambiarVista={setVistaActual} setUsuario={setUsuarioAutenticado} />}
             {vistaActual === 'registro' && <VistaRegistro cambiarVista={setVistaActual} />}
             {vistaActual === 'acercaDe' && <VistaAcercaDe cambiarVista={setVistaActual} />}
           </main>
@@ -37,7 +39,10 @@ export default function App() {
         </div>
       )}
 
-      {vistaActual === 'panelEntrenador' && <PanelEntrenador cambiarVista={setVistaActual} />}
+      {/* Le pasamos al panel el usuario para que el saludo sea real */}
+      {vistaActual === 'panelEntrenador' && (
+        <PanelEntrenador cambiarVista={setVistaActual} usuarioAutenticado={usuarioAutenticado} />
+      )}
       
     </div>
   );
