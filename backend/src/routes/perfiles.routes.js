@@ -45,4 +45,6 @@ router.post('/:id_usuario/medico', verificarToken, perfilesController.upsertPerf
 router.put('/:id_usuario/detalles', verificarToken, perfilesController.upsertDetalles);
 router.post('/:id_usuario/detalles', verificarToken, perfilesController.upsertDetalles);
 
+router.put('/:id_usuario/enviar-revision', verificarToken, perfilesController.enviarARevision);
+
 module.exports = router;

@@ -1,0 +1,42 @@
+INSERT INTO catalogo_roles (id_rol, nombre_rol) VALUES 
+(1, 'Atleta'),
+(2, 'Entrenador'),
+(3, 'Administrador')
+ON CONFLICT (id_rol) DO NOTHING;
+
+WITH nuevo_entrenador AS (
+    INSERT INTO usuarios (id_rol, nombre, primer_apellido, correo, password, estado_cuenta) 
+    VALUES (
+        2, 
+        'Gerardo',
+        'Amaro Buitron',
+        'jerrygab2006@gmail.com', 
+        '$2a$10$.OTd58sbeKkv4nNteUdUeeSXYRoFP/RJxWvK8BBu/Aa1NNrIURr7u',
+        true
+    )
+    RETURNING id_usuario
+)
+INSERT INTO entrenadores (id_usuario, curp)
+SELECT 
+    id_usuario, 
+    'AABG000101HQREXX01'
+FROM nuevo_entrenador;
+
+WITH nueva_atleta AS (
+    INSERT INTO usuarios (id_rol, nombre, primer_apellido, correo, password, estado_cuenta) 
+    VALUES (
+        1, 
+        'Victoria',
+        'Piña Poot',
+        'victoria.pina@ejemplo.com',
+        '$2a$10$.OTd58sbeKkv4nNteUdUeeSXYRoFP/RJxWvK8BBu/Aa1NNrIURr7u',
+        true
+    )
+    RETURNING id_usuario
+)
+INSERT INTO atletas (id_usuario, id_estatus, curp)
+SELECT 
+    id_usuario, 
+    1,
+    'PIPV050202MQREXX02'
+FROM nueva_atleta;

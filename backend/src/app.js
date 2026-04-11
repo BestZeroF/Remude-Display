@@ -41,6 +41,7 @@ app.use('/api/atletas', atletasRoutes);
 app.use('/api/entrenadores', entrenadoresRoutes);
 app.use('/api/documentos', documentosRoutes);
 app.use('/api/perfiles', perfilesRoutes); // <-- Conectado al prefijo /api/perfiles
+app.use('/api/admin', require('./routes/admin.routes'));
 
 // Endpoint de prueba para saber que todo está funcionando bien
 app.get('/', (req, res) => {
