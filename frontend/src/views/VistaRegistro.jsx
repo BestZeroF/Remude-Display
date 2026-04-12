@@ -20,7 +20,6 @@ export default function VistaRegistro({ cambiarVista }) {
     
     if (!datosFormulario.nombre) nuevosErrores.nombre = 'Obligatorio';
     if (!datosFormulario.apellidoPaterno) nuevosErrores.apellidoPaterno = 'Obligatorio';
-    if (!datosFormulario.apellidoMaterno) nuevosErrores.apellidoMaterno = 'Obligatorio';
     if (!datosFormulario.correo) nuevosErrores.correo = 'Obligatorio';
     if (!datosFormulario.curp) nuevosErrores.curp = 'Obligatorio';
     if (!datosFormulario.contrasena) nuevosErrores.contrasena = 'Obligatorio';
@@ -40,33 +39,37 @@ export default function VistaRegistro({ cambiarVista }) {
     setErrores({});
 
     try {
-      const URL_VALIDAR = `http://localhost:3000/api/auth/validar-curp/${datosFormulario.curp}`;
-      const resValidacion = await fetch(URL_VALIDAR);
-      
-      if (resValidacion.ok) {
-        const dataValidacion = await resValidacion.json();
-        if (dataValidacion.existe) {
-          setErrores({ curp: 'Esta CURP ya se encuentra registrada' });
-          setCargando(false);
-          return;
+      // 1. Validar CURP (Opcional, asume que el backend tiene la ruta)
+      const URL_VALIDAR = `http://localhost:3000/api/atletas/validar-curp/${datosFormulario.curp}`;
+      try {
+        const resValidacion = await fetch(URL_VALIDAR);
+        if (resValidacion.ok) {
+          const dataValidacion = await resValidacion.json();
+          if (dataValidacion.existe) {
+            setErrores({ curp: 'Esta CURP ya se encuentra registrada' });
+            setCargando(false);
+            return;
+          }
         }
+      } catch (error) {
+        console.warn('Endpoint de validación no disponible, procediendo al registro...', error);
       }
 
+      // 2. Ejecutar Registro de Entrenador (API v2)
       const URL_REGISTRO = 'http://localhost:3000/api/auth/registro/entrenador';
       const respuesta = await fetch(URL_REGISTRO, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nombre: datosFormulario.nombre,
-          apellido_paterno: datosFormulario.apellidoPaterno, // Enviado en formato snake_case esperado por bd
-          apellido_materno: datosFormulario.apellidoMaterno,
+          primer_apellido: datosFormulario.apellidoPaterno,
+          segundo_apellido: datosFormulario.apellidoMaterno,
           correo: datosFormulario.correo,
           curp: datosFormulario.curp,
           password: datosFormulario.contrasena,
-          titulo_logro: "Pendiente",
-          fecha_logro: "2024-01-01",
-          descripcion: "Pendiente",
-          especialidad: "Pendiente"
+          especialidad: "Por definir",
+          // Se envía el id_rol explicitamente para evitar errores 500 en bases de datos con constraints estrictas
+          id_rol: 2 
         })
       });
 
@@ -76,11 +79,13 @@ export default function VistaRegistro({ cambiarVista }) {
         alert('Cuenta creada exitosamente. Por favor, inicia sesión.');
         cambiarVista('login');
       } else {
-        setErrores({ general: data.message || 'Hubo un error al registrar la cuenta' });
+        // Muestra detalles específicos del error si la BD los devuelve para mejor depuración
+        const errorMsg = data.detail || data.error || data.message || 'Hubo un error interno del servidor al crear la cuenta.';
+        setErrores({ general: errorMsg });
       }
     } catch (error) {
       console.error('Error:', error);
-      setErrores({ general: 'Error conectando con el servidor' });
+      setErrores({ general: 'Error conectando con el servidor. Verifica tu conexión.' });
     } finally {
       setCargando(false);
     }
@@ -100,13 +105,12 @@ export default function VistaRegistro({ cambiarVista }) {
       <p className="text-gray-500 mb-6 font-light text-sm">Crea tu cuenta de entrenador</p>
 
       {errores.general && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm font-bold text-center">
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-xl text-sm font-bold text-center wrap-break-word">
           {errores.general}
         </div>
       )}
 
       <form onSubmit={manejarEnvio} className="space-y-3" noValidate>
-        {/* Fila 1: Nombre */}
         <div>
           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Nombre(s)</label>
           <div className="relative shadow-sm rounded-xl">
@@ -123,7 +127,6 @@ export default function VistaRegistro({ cambiarVista }) {
           {errores.nombre && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.nombre}</p>}
         </div>
 
-        {/* Fila 2: Apellidos separados */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Apellido Paterno</label>
@@ -151,7 +154,6 @@ export default function VistaRegistro({ cambiarVista }) {
           </div>
         </div>
 
-        {/* Fila 3: CURP */}
         <div>
           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">CURP</label>
           <div className="relative shadow-sm rounded-xl">
@@ -168,7 +170,6 @@ export default function VistaRegistro({ cambiarVista }) {
           {errores.curp && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.curp}</p>}
         </div>
 
-        {/* Fila 4: Correo */}
         <div>
           <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Correo electrónico</label>
           <div className="relative shadow-sm rounded-xl">
@@ -185,7 +186,6 @@ export default function VistaRegistro({ cambiarVista }) {
           {errores.correo && <p className="text-red-500 text-[10px] mt-1 font-bold">{errores.correo}</p>}
         </div>
 
-        {/* Fila 5: Contraseñas */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Contraseña</label>

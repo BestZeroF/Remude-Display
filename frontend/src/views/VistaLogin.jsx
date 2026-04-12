@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowLeft, Zap } from 'lucide-react';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
 
 export default function VistaLogin({ cambiarVista, setUsuario }) {
   const [datosFormulario, setDatosFormulario] = useState({ correo: '', contrasena: '' });
@@ -19,7 +19,6 @@ export default function VistaLogin({ cambiarVista, setUsuario }) {
 
     setCargando(true);
     
-    // --- CONEXIÓN REAL AL BACKEND ---
     const URL_LOGIN = 'http://localhost:3000/api/auth/login'; 
 
     try {
@@ -36,7 +35,13 @@ export default function VistaLogin({ cambiarVista, setUsuario }) {
 
       if (respuesta.ok) {
         localStorage.setItem('token_remude', data.token);
-        setUsuario(data.usuario); 
+        
+        setUsuario({
+          ...data.usuario,
+          id_usuario: data.id_usuario,
+          id_rol: data.id_rol
+        }); 
+        
         cambiarVista('panelEntrenador');
       } else {
         setErrores({ general: data.message || 'Error al iniciar sesión' });
@@ -47,13 +52,6 @@ export default function VistaLogin({ cambiarVista, setUsuario }) {
     } finally {
       setCargando(false);
     }
-  };
-
-  // --- FUNCIÓN DEL BOTÓN TRAMPA ---
-  const entrarModoPrueba = () => {
-    localStorage.setItem('token_remude', 'MODO_PRUEBA');
-    setUsuario({ nombre: 'Victoria', apellidos: 'Piña', correo: 'admin@remude.com' });
-    cambiarVista('panelEntrenador');
   };
 
   return (
@@ -115,15 +113,6 @@ export default function VistaLogin({ cambiarVista, setUsuario }) {
           {cargando ? 'Procesando...' : 'Iniciar sesión'}
         </button>
       </form>
-
-      {/* BOTÓN TRAMPA PARA SALTAR EL LOGIN */}
-      <button 
-        onClick={entrarModoPrueba}
-        className="w-full flex justify-center items-center py-3 px-4 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors mt-3 border border-gray-200"
-      >
-        <Zap className="w-4 h-4 mr-2 text-yellow-500" />
-        Entrar sin conexión (Modo Prueba)
-      </button>
 
       <div className="mt-6 text-center border-t border-gray-100 pt-6">
         <p className="text-sm text-gray-600">
