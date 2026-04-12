@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ArrowLeft, CheckCircle, Search, User, MapPin, Activity, Shirt, AlertTriangle, X } from 'lucide-react';
 
 const ESTADO_INICIAL_FORMULARIO = {
+  idUsuarioAtleta: null, 
   curp: '',
   nombre: '', primerApellido: '', segundoApellido: '', fechaNacimiento: '', 
   rfc: '', nss: '', ine: '', estadoCivil: '', sexo: '', genero: '',
@@ -14,6 +15,23 @@ const ESTADO_INICIAL_FORMULARIO = {
   nivelEstudios: '', institucion: '', carrera: ''
 };
 
+const mapCatalogo = {
+  sexo: { 'HOMBRE': 1, 'MUJER': 2, 'INTERSEXUAL': 3 },
+  genero: { 'MASCULINO': 1, 'FEMENINO': 2, 'NO BINARIO': 3, 'PREFIERO NO DECIRLO': 4 },
+  estadoCivil: { 'SOLTERO(A)': 1, 'CASADO(A)': 2, 'DIVORCIADO(A)': 3, 'VIUDO(A)': 4, 'UNIÓN LIBRE': 5 },
+  tipoSangre: { 'A+': 1, 'A-': 2, 'B+': 3, 'B-': 4, 'AB+': 5, 'AB-': 6, 'O+': 7, 'O-': 8 },
+  disciplina: { 'ATLETISMO': 1, 'FÚTBOL': 2, 'BÉISBOL': 3, 'BÁSQUETBOL': 4, 'NATACIÓN': 5 },
+  categoria: { 'INFANTIL': 1, 'JUVENIL': 2, 'LIBRE': 3, 'VETERANOS': 4 },
+  talla: { 'XS': 4, 'S': 5, 'M': 6, 'L': 7, 'XL': 8, 'XXL': 8 }, 
+  nivelEstudios: { 'PRIMARIA': 1, 'SECUNDARIA': 2, 'PREPARATORIA': 3, 'LICENCIATURA': 4, 'MAESTRÍA': 5 }
+};
+
+const getID = (catalogo, valorStr) => {
+  if (!valorStr) return null;
+  return mapCatalogo[catalogo][valorStr.toUpperCase()] || null;
+};
+
+// Se eliminó 'cambiarVistaPanel' de las propiedades para limpiar la advertencia de ESLint
 export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNavegacion, cancelarNavegacion, solicitarNavegacion }) {
   const [pasoActual, setPasoActual] = useState(1);
   const totalPasos = 5;
@@ -22,10 +40,25 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   const [errorValidacion, setErrorValidacion] = useState('');
   const [atletaExistente, setAtletaExistente] = useState(null);
   
-  // Notificación flotante (toast)
   const [notificacion, setNotificacion] = useState({ visible: false, mensaje: '', tipo: 'exito' });
-
   const [datosFormulario, setDatosFormulario] = useState(ESTADO_INICIAL_FORMULARIO);
+
+  const totalCampos = Object.keys(datosFormulario).length - 1; 
+  const camposLlenos = Object.values(datosFormulario).filter(valor => typeof valor === 'string' && valor.trim() !== '').length;
+  const porcentajeProgreso = (camposLlenos / totalCampos) * 100;
+
+  // LÓGICA DE NAVEGACIÓN CORREGIDA: Si está en el Paso 1, sale sin preguntar.
+  useEffect(() => {
+    if (intentoNavegacion && pasoActual === 1) {
+      if (intentoNavegacion === 'inscripcion') {
+        setDatosFormulario(ESTADO_INICIAL_FORMULARIO);
+        setPasoActual(1);
+        cancelarNavegacion();
+      } else {
+        confirmarNavegacion(intentoNavegacion);
+      }
+    }
+  }, [intentoNavegacion, pasoActual, cancelarNavegacion, confirmarNavegacion]);
 
   const manejarCambio = (campo, valor) => {
     setDatosFormulario({ ...datosFormulario, [campo]: valor });
@@ -60,6 +93,12 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
       const respuesta = await fetch(URL_VALIDAR_CURP, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
+      if (respuesta.status === 404) {
+         setErrorValidacion('Error 404: El equipo de backend aún no ha creado el endpoint para validar la CURP.');
+         return;
+      }
+
       const data = await respuesta.json();
 
       if (respuesta.ok) {
@@ -72,11 +111,11 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
           setPasoActual(2);
         }
       } else {
-         setErrorValidacion(data.message || 'Error al validar la CURP.');
+         setErrorValidacion(data.message || 'Error al validar la CURP con el servidor.');
       }
     } catch (error) {
       console.error('Error validando CURP:', error);
-      setErrorValidacion('Error de conexión con el servidor.');
+      setErrorValidacion('Error de conexión. El servidor no responde a la validación de CURP.');
     } finally {
       setCargando(false);
     }
@@ -85,86 +124,124 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   const retrocederPaso = () => setPasoActual(prev => Math.max(prev - 1, 1));
   const avanzarPaso = () => setPasoActual(prev => Math.min(prev + 1, totalPasos));
 
-  const totalCampos = Object.keys(datosFormulario).length;
-  const camposLlenos = Object.values(datosFormulario).filter(valor => typeof valor === 'string' && valor.trim() !== '').length;
-  const porcentajeProgreso = (camposLlenos / totalCampos) * 100;
-
   const enviarFormulario = async (esAvance = false, destinoFinal = null) => {
     setCargando(true);
     setNotificacion({ visible: false, mensaje: '', tipo: '' }); 
 
-    const URL_ATLETAS = 'http://localhost:3000/api/atletas';
     const token = localStorage.getItem('token_remude');
+    const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
     
     const nombreLimpio = `${datosFormulario.nombre} ${datosFormulario.primerApellido}`.trim();
     const textoAtleta = nombreLimpio ? ` para el atleta ${nombreLimpio}` : '';
 
     const procesarExito = () => {
-      // Si el guardado provino del Modal interceptor de navegación
       if (destinoFinal) {
         if (destinoFinal === 'inscripcion') {
-          // El usuario clickeó en "Inscribir atleta" de nuevo. Limpiamos y nos quedamos.
           setDatosFormulario(ESTADO_INICIAL_FORMULARIO);
           setPasoActual(1);
           cancelarNavegacion();
-          setNotificacion({ 
-            visible: true, 
-            mensaje: `Avance guardado${textoAtleta}. Formulario listo para otro registro.`, 
-            tipo: 'exito'
-          });
+          setNotificacion({ visible: true, mensaje: `Se han guardado los avances con éxito${textoAtleta}. Formulario listo para un nuevo registro.`, tipo: 'exito' });
         } else {
-          // Nos vamos a otra pantalla libremente
           confirmarNavegacion(destinoFinal);
         }
         return;
       }
 
-      // Si el guardado fue normal en la página
       if (esAvance) {
-        setNotificacion({ 
-          visible: true, 
-          mensaje: `Se ha guardado tu avance${textoAtleta}.`, 
-          tipo: 'exito'
-        });
+        setNotificacion({ visible: true, mensaje: `Se han guardado los avances con éxito${textoAtleta}.`, tipo: 'exito' });
       } else {
-        // En Finalizar, nos quedamos en la pantalla también, pero informamos.
-        setNotificacion({ 
-          visible: true, 
-          mensaje: `¡Registro finalizado con éxito${textoAtleta}!`, 
-          tipo: 'exito'
-        });
+        setNotificacion({ visible: true, mensaje: `¡Registro finalizado con éxito${textoAtleta}!`, tipo: 'exito' });
       }
       window.scrollTo({ top: 0, behavior: 'smooth' }); 
     };
 
     if (token === 'MODO_PRUEBA') {
-      setTimeout(() => {
-        procesarExito();
-        setCargando(false);
-      }, 1000);
+      setTimeout(() => { procesarExito(); setCargando(false); }, 1000);
       return;
     }
 
     try {
-      const respuesta = await fetch(URL_ATLETAS, {
-        method: 'POST', 
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify(datosFormulario)
-      });
+      let currentUserId = datosFormulario.idUsuarioAtleta;
 
-      const data = await respuesta.json();
+      if (!currentUserId && datosFormulario.nombre) {
+        const payloadBase = {
+          nombre: datosFormulario.nombre,
+          primer_apellido: datosFormulario.primerApellido,
+          segundo_apellido: datosFormulario.segundoApellido || "",
+          correo: datosFormulario.correo || `temp_${Date.now()}@remude.com`, 
+          password: "Remude_password123!", 
+          curp: datosFormulario.curp
+        };
 
-      if (respuesta.ok || respuesta.status === 201) {
-        procesarExito();
-      } else {
-        setNotificacion({ visible: true, mensaje: data.message || 'Error al registrar al atleta en la BD.', tipo: 'error' });
+        const resBase = await fetch('http://localhost:3000/api/auth/registro/atleta', { method: 'POST', headers, body: JSON.stringify(payloadBase) });
+        const dataBase = await resBase.json();
+        
+        if (resBase.ok) {
+          currentUserId = dataBase.id_usuario;
+          setDatosFormulario(prev => ({ ...prev, idUsuarioAtleta: currentUserId }));
+        } else {
+          throw new Error(dataBase.message || dataBase.error || dataBase.detail || "Error al registrar el usuario base del atleta.");
+        }
       }
+
+      if (currentUserId) {
+        const payloadPersonal = {
+          id_sexo: getID('sexo', datosFormulario.sexo),
+          id_genero: getID('genero', datosFormulario.genero),
+          id_estadocivil: getID('estadoCivil', datosFormulario.estadoCivil),
+          rfc: datosFormulario.rfc,
+          nss: datosFormulario.nss,
+          clave_ine: datosFormulario.ine,
+          lugar_nacimiento: datosFormulario.lugarNacimiento
+        };
+        await fetch(`http://localhost:3000/api/perfiles/${currentUserId}/personal`, { method: 'PUT', headers, body: JSON.stringify(payloadPersonal) });
+
+        if (datosFormulario.celular || datosFormulario.codigoPostal) {
+          const payloadDomicilio = {
+            celular: datosFormulario.celular,
+            telefono_fijo: datosFormulario.telefonoFijo,
+            codigo_postal: datosFormulario.codigoPostal,
+            colonia: datosFormulario.colonia,
+            direccion_calle: datosFormulario.calle,
+            cruzamientos: datosFormulario.cruzamientos,
+            num_exterior: datosFormulario.numExterior,
+            num_interior: datosFormulario.numInterior,
+            manzana: datosFormulario.manzana,
+            lote: datosFormulario.lote
+          };
+          await fetch(`http://localhost:3000/api/perfiles/${currentUserId}/domicilio`, { method: 'PUT', headers, body: JSON.stringify(payloadDomicilio) });
+        }
+
+        if (datosFormulario.peso || datosFormulario.tipoSangre) {
+          const payloadMedico = {
+            id_tiposangre: getID('tipoSangre', datosFormulario.tipoSangre),
+            peso_kg: parseFloat(datosFormulario.peso) || null,
+            estatura_mts: parseFloat(datosFormulario.estatura) || null,
+            alergias_condiciones: datosFormulario.alergias
+          };
+          await fetch(`http://localhost:3000/api/perfiles/${currentUserId}/medico`, { method: 'PUT', headers, body: JSON.stringify(payloadMedico) });
+        }
+
+        if (datosFormulario.tallaCamisa || datosFormulario.disciplina) {
+          const payloadDetalles = {
+            id_categoria: getID('categoria', datosFormulario.categoria),
+            id_talla_camisa: getID('talla', datosFormulario.tallaCamisa),
+            id_talla_pantalon: getID('talla', datosFormulario.tallaPantalon),
+            id_talla_short: getID('talla', datosFormulario.tallaShort),
+            id_talla_chamarra: getID('talla', datosFormulario.tallaChamarra),
+            talla_calzado: parseFloat(datosFormulario.tallaTenis) || null,
+            id_nivel_estudios: getID('nivelEstudios', datosFormulario.nivelEstudios),
+            institucion_escolar: datosFormulario.institucion
+          };
+          await fetch(`http://localhost:3000/api/perfiles/${currentUserId}/detalles`, { method: 'PUT', headers, body: JSON.stringify(payloadDetalles) });
+        }
+      }
+
+      procesarExito(); 
+      
     } catch (error) {
-      console.error('Error enviando atleta:', error);
-      setNotificacion({ visible: true, mensaje: 'Error de conexión con el servidor. Revisa si el backend está corriendo.', tipo: 'error' });
+      console.error('Error enviando datos:', error);
+      setNotificacion({ visible: true, mensaje: error.message || 'Error al conectar con el servidor.', tipo: 'error' });
     } finally {
       setCargando(false);
     }
@@ -173,8 +250,8 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   return (
     <div className="max-w-4xl mx-auto w-full animate-fade-in pb-10 relative">
       
-      {/* MODAL DE NAVEGACIÓN INSEGURA */}
-      {intentoNavegacion && (
+      {/* MODAL DE NAVEGACIÓN INSEGURA - AHORA SOLO EN PASO 2 EN ADELANTE */}
+      {intentoNavegacion && pasoActual > 1 && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full">
             <div className="flex items-center mb-4">
@@ -201,7 +278,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
               <button 
                 onClick={() => {
                   if (intentoNavegacion === 'inscripcion') {
-                    // Limpiamos el form y cancelamos el modal si querían reiniciarlo
                     setDatosFormulario(ESTADO_INICIAL_FORMULARIO);
                     setPasoActual(1);
                     cancelarNavegacion();
@@ -221,15 +297,13 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
         </div>
       )}
 
-      {/* NOTIFICACIÓN PERSONALIZADA FLOTANTE SIN BORDES */}
       {notificacion.visible && (
-        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-60 w-[90%] max-w-2xl p-4 rounded-2xl shadow-xl flex justify-between items-start animate-fade-in-down ${notificacion.tipo === 'exito' ? 'bg-[#10b981] text-white' : 'bg-[#ef4444] text-white'}`}>
+        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-60 w-[90%] max-w-2xl p-4 rounded-xl shadow-xl flex justify-between items-start animate-fade-in-down ${notificacion.tipo === 'exito' ? 'bg-[#10b981] text-white' : 'bg-[#ef4444] text-white'}`}>
           <div className="flex items-start">
             {notificacion.tipo === 'exito' ? <CheckCircle className="w-6 h-6 mr-3 text-white shrink-0 mt-0.5" /> : <AlertTriangle className="w-6 h-6 mr-3 text-white shrink-0 mt-0.5" />}
             <div className="flex flex-col">
               <p className="text-sm font-bold leading-relaxed">{notificacion.mensaje}</p>
               
-              {/* Botón rápido para limpiar e iniciar de nuevo */}
               {notificacion.tipo === 'exito' && (
                 <button 
                   onClick={() => {
@@ -244,7 +318,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
               )}
             </div>
           </div>
-          <button onClick={() => setNotificacion({ ...notificacion, visible: false })} className="p-1.5 hover:bg-black/10 rounded-lg transition-colors ml-4 shrink-0">
+          <button onClick={() => setNotificacion({ ...notificacion, visible: false })} className="p-1 hover:bg-black/10 rounded-lg transition-colors ml-4 shrink-0">
             <X className="w-5 h-5 text-white" />
           </button>
         </div>
@@ -423,11 +497,11 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SelectGroup label="Disciplina *" opciones={['Atletismo', 'Fútbol', 'Básquetbol', 'Béisbol', 'Natación', 'Boxeo']} valor={datosFormulario.disciplina} cambiar={(v) => manejarCambio('disciplina', v)} />
-                <SelectGroup label="Categoría *" opciones={['Infantil', 'Juvenil Menor', 'Juvenil Mayor', 'Libre', 'Sub-23']} valor={datosFormulario.categoria} cambiar={(v) => manejarCambio('categoria', v)} />
+                <SelectGroup label="Categoría *" opciones={['Infantil', 'Juvenil Menor', 'Juvenil Mayor', 'Libre', 'Veteranos']} valor={datosFormulario.categoria} cambiar={(v) => manejarCambio('categoria', v)} />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <SelectGroup label="Tipo de sangre *" opciones={['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-']} valor={datosFormulario.tipoSangre} cambiar={(v) => manejarCambio('tipoSangre', v)} />
+                <SelectGroup label="Tipo de sangre *" opciones={['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']} valor={datosFormulario.tipoSangre} cambiar={(v) => manejarCambio('tipoSangre', v)} />
                 <InputGroup label="Peso (Kg) *" placeholder="Ej. 65" valor={datosFormulario.peso} cambiar={(v) => manejarCambio('peso', v)} />
                 <InputGroup label="Estatura (Mts) *" placeholder="Ej. 1.70" valor={datosFormulario.estatura} cambiar={(v) => manejarCambio('estatura', v)} />
               </div>
@@ -465,7 +539,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
               
               <p className="text-sm font-bold text-gray-500 uppercase mb-4">Perfil Académico</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <SelectGroup label="Nivel de estudios" opciones={['Primaria', 'Secundaria', 'Preparatoria', 'Licenciatura', 'Posgrado', 'Ninguno']} valor={datosFormulario.nivelEstudios} cambiar={(v) => manejarCambio('nivelEstudios', v)} />
+                <SelectGroup label="Nivel de estudios" opciones={['Primaria', 'Secundaria', 'Preparatoria', 'Licenciatura', 'Maestría']} valor={datosFormulario.nivelEstudios} cambiar={(v) => manejarCambio('nivelEstudios', v)} />
                 <div className="md:col-span-2">
                   <InputGroup label="Institución Escolar" valor={datosFormulario.institucion} cambiar={(v) => manejarCambio('institucion', v)} />
                 </div>

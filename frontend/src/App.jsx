@@ -6,13 +6,11 @@ import VistaRegistro from './views/VistaRegistro';
 import VistaAcercaDe from './views/VistaAcercaDe';
 import PanelEntrenador from './views/PanelEntrenador';
 import FooterPublico from './components/FooterPublico';
-
 import logoRojo from './assets/logo-rojo-remude.png';
 
 export default function App() {
   const [vistaActual, setVistaActual] = useState('inicio');
   
-  // ESTADO GLOBAL: Aquí guardamos los datos del usuario cuando se loguea exitosamente
   const [usuarioAutenticado, setUsuarioAutenticado] = useState(null);
 
   return (
@@ -39,7 +37,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Le pasamos al panel el usuario para que el saludo sea real */}
       {vistaActual === 'panelEntrenador' && (
         <PanelEntrenador cambiarVista={setVistaActual} usuarioAutenticado={usuarioAutenticado} />
       )}

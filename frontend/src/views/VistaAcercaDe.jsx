@@ -12,7 +12,7 @@ export default function VistaAcercaDe({ cambiarVista }) {
       <div className="space-y-8 text-gray-700 font-light text-lg">
         <div>
           <p className="text-2xl font-black text-gray-900 tracking-tight">REMUDE</p>
-          <p className="text-gray-500 mt-2">Plataforma integral orientada a servicios para la gestión técnica de atletas...</p>
+          <p className="text-gray-500 mt-2">Plataforma integral orientada a servicios para la gestión técnica de atletas, documentos y espacios deportivos en el Municipio de Bacalar.</p>
         </div>
       </div>
     </div>
