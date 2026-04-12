@@ -45,7 +45,7 @@ app.use('/api/admin', require('./routes/admin.routes'));
 
 // Endpoint de prueba para saber que todo está funcionando bien
 app.get('/', (req, res) => {
-    res.json({ message: '🚀 API de REmude conectada y funcionando correctamente.' });
+    res.json({ message: '🚀 API de Remude conectada y funcionando correctamente.' });
 });
 
 // ==========================================
@@ -55,7 +55,7 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
     console.log(`===========================================`);
-    console.log(`✅ Servidor REmude corriendo en puerto ${PORT}`);
+    console.log(`✅ Servidor Remude corriendo en puerto ${PORT}`);
     console.log(`🌐 Accede a: http://localhost:${PORT}`);
     console.log(`===========================================`);
 });
