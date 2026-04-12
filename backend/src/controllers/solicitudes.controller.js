@@ -10,11 +10,12 @@ const obtenerSolicitudes = async (req, res) => {
                 s.fecha_solicitud,
                 ce.nombre_estatus AS estatus,
                 u_solicita.nombre AS solicitante_nombre,
-                u_solicita.apellidos AS solicitante_apellidos,
+                u_solicita.primer_apellido AS solicitante_apellido_paterno,
+                u_solicita.segundo_apellido AS solicitante_apellido_materno,
                 u_atleta.nombre AS atleta_nombre,
-                u_atleta.apellidos AS atleta_apellidos,
+                u_atleta.primer_apellido AS atleta_apellido_paterno,
                 u_entrenador.nombre AS entrenador_propuesto_nombre,
-                u_entrenador.apellidos AS entrenador_propuesto_apellidos
+                u_entrenador.primer_apellido AS entrenador_propuesto_apellido
             FROM solicitudes_reasignacion s
             JOIN catalogo_estatus ce ON s.id_estatus = ce.id_estatus
             JOIN usuarios u_solicita ON s.id_usuario = u_solicita.id_usuario
@@ -37,7 +38,6 @@ const obtenerSolicitudes = async (req, res) => {
 const crearSolicitud = async (req, res) => {
     const { id_usuario, id_atleta, id_entrenador, id_estatus, motivo } = req.body;
 
-    // Validación de campos obligatorios
     if (!id_usuario || !id_atleta || !id_entrenador || !id_estatus || !motivo) {
         return res.status(400).json({ message: "Todos los campos son obligatorios" });
     }
@@ -59,14 +59,11 @@ const crearSolicitud = async (req, res) => {
         });
     } catch (error) {
         console.error("Error al crear solicitud:", error);
-        
-        // Manejo de errores de llaves foráneas
         if (error.code === '23503') {
             return res.status(400).json({ 
                 message: "Error de referencia: Asegúrese de que el usuario, atleta, entrenador y estatus existan." 
             });
         }
-        
         res.status(500).json({ message: "Error interno del servidor" });
     }
 };

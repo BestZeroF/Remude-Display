@@ -15,12 +15,13 @@ adminController.obtenerTodosLosUsuarios = async (req, res) => {
                 u.primer_apellido,
                 u.segundo_apellido,
                 COALESCE(a.curp, e.curp) as curp,
-                a.estado_validacion,
+                ce.nombre_estatus AS estatus_atleta,
                 ue.nombre AS nombre_entrenador,
                 ue.primer_apellido AS apellido_entrenador
             FROM usuarios u
             INNER JOIN catalogo_roles cr ON u.id_rol = cr.id_rol
             LEFT JOIN atletas a ON u.id_usuario = a.id_usuario
+            LEFT JOIN catalogo_estatus ce ON a.id_estatus = ce.id_estatus
             LEFT JOIN entrenadores e ON u.id_usuario = e.id_usuario
             LEFT JOIN administrativos ad ON u.id_usuario = ad.id_usuario
             LEFT JOIN entrenadores ent_asignado ON a.id_entrenador = ent_asignado.id_entrenador
@@ -67,31 +68,32 @@ adminController.reasignarAtleta = async (req, res) => {
     }
 };
 
-// PUT /api/admin/dictamen/:id_usuario -> Aprobar o devolver
+// PUT /api/admin/dictamen/:id_usuario -> Cambiar id_estatus (Ej. 1: Activo, 2: Inactivo, 3: En Corrección)
 adminController.dictaminarPerfil = async (req, res) => {
     try {
         const { id_usuario } = req.params;
-        const { dictamen } = req.body; // 'APROBADO' o 'CORRECCION'
+        const { id_estatus } = req.body; // Ahora requiere un id_estatus numérico
 
-        if (!['APROBADO', 'CORRECCION'].includes(dictamen)) {
-            return res.status(400).json({ message: 'Dictamen inválido. Use APROBADO o CORRECCION.' });
+        if (!id_estatus || isNaN(id_estatus)) {
+            return res.status(400).json({ message: 'Se requiere un id_estatus válido (numérico).' });
         }
 
         const query = `
             UPDATE atletas 
-            SET estado_validacion = $1 
+            SET id_estatus = $1 
             WHERE id_usuario = $2 
-            RETURNING id_atleta, estado_validacion
+            RETURNING id_atleta, id_estatus
         `;
-        const { rows } = await db.query(query, [dictamen, id_usuario]);
+        const { rows } = await db.query(query, [id_estatus, id_usuario]);
 
         if (rows.length === 0) {
             return res.status(404).json({ message: 'Atleta no encontrado.' });
         }
 
-        res.json({ message: `Perfil del atleta marcado como: ${dictamen}`, data: rows[0] });
+        res.json({ message: `Estatus del perfil actualizado correctamente a la opción ID: ${id_estatus}`, data: rows[0] });
     } catch (error) {
         console.error('Error al dictaminar:', error);
+        if (error.code === '23503') return res.status(400).json({ message: 'El estatus proporcionado no existe en el catálogo.' });
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 };

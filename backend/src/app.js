@@ -9,7 +9,11 @@ const authRoutes = require('./routes/auth.routes');
 const atletasRoutes = require('./routes/atletas.routes');
 const entrenadoresRoutes = require('./routes/entrenadores.routes');
 const documentosRoutes = require('./routes/documentos.routes');
-const perfilesRoutes = require('./routes/perfiles.routes'); // <-- Nueva ruta compartida
+const perfilesRoutes = require('./routes/perfiles.routes');
+const catalogosRoutes = require('./routes/catalogos.routes');
+const eventosRoutes = require('./routes/eventos.routes');
+const solicitudesRoutes = require('./routes/solicitudes.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
@@ -35,17 +39,19 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ==========================================
 // 4. CONEXIÓN DE RUTAS (ENDPOINTS)
 // ==========================================
-// Todas las rutas de tu API tendrán el prefijo "/api/..."
 app.use('/api/auth', authRoutes);
 app.use('/api/atletas', atletasRoutes);
 app.use('/api/entrenadores', entrenadoresRoutes);
 app.use('/api/documentos', documentosRoutes);
-app.use('/api/perfiles', perfilesRoutes); // <-- Conectado al prefijo /api/perfiles
-app.use('/api/admin', require('./routes/admin.routes'));
+app.use('/api/perfiles', perfilesRoutes);
+app.use('/api/catalogos', catalogosRoutes);
+app.use('/api/eventos', eventosRoutes);
+app.use('/api/solicitudes', solicitudesRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Endpoint de prueba para saber que todo está funcionando bien
 app.get('/', (req, res) => {
-    res.json({ message: '🚀 API de Remude conectada y funcionando correctamente.' });
+    res.json({ message: '🚀 API de Remude conectada y funcionando correctamente (V5.0).' });
 });
 
 // ==========================================

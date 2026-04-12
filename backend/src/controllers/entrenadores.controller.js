@@ -7,7 +7,7 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
 
-        // 1. Obtener info del entrenador (Actualizado con primer y segundo apellido)
+        // 1. Obtener info del entrenador 
         const queryEntrenador = `
             SELECT e.id_entrenador, e.titulo_logro, e.especialidad, u.nombre, u.primer_apellido, u.segundo_apellido
             FROM entrenadores e
@@ -95,12 +95,11 @@ entrenadoresController.obtenerEntrenadorPorId = async (req, res) => {
 // PUT /api/entrenadores/:id (Actualizar datos del entrenador)
 entrenadoresController.actualizarEntrenador = async (req, res) => {
     try {
-        const { id } = req.params; // id_entrenador
+        const { id } = req.params; 
         const id_usuario_token = req.user.id_usuario;
         const id_rol = req.user.id_rol;
         const { nombre, primer_apellido, segundo_apellido, titulo_logro, descripcion, especialidad } = req.body;
 
-        // Seguridad: Validar que el usuario que hace la petición sea el dueño del perfil o un Admin (rol 3)
         const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_entrenador = $1';
         const checkResult = await db.query(checkQuery, [id]);
 
@@ -112,7 +111,6 @@ entrenadoresController.actualizarEntrenador = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para modificar este perfil.' });
         }
 
-        // Actualizamos las 2 tablas usando una CTE y COALESCE para no sobreescribir con nulos si solo envían 1 dato
         const query = `
             WITH actualizacion_usuario AS (
                 UPDATE usuarios
@@ -150,11 +148,10 @@ entrenadoresController.actualizarEntrenador = async (req, res) => {
 // GET /api/entrenadores/:id/atletas (Lista de atletas del grupo del entrenador)
 entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
     try {
-        const { id } = req.params; // id_entrenador
+        const { id } = req.params; 
         const id_usuario_token = req.user.id_usuario;
         const id_rol = req.user.id_rol;
 
-        // Seguridad
         const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_entrenador = $1';
         const checkResult = await db.query(checkQuery, [id]);
 
@@ -166,7 +163,7 @@ entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para ver los atletas de este grupo.' });
         }
 
-        // Obtener la lista detallada de atletas (Actualizado con JOIN a detalles_atletas)
+        // CORRECCIÓN V5: El JOIN hacia detalles_atletas ahora es por id_usuario
         const query = `
             SELECT a.id_atleta, a.curp, a.fecha_nacimiento, 
                    u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta,
@@ -174,7 +171,7 @@ entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
             FROM atletas a
             INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
             INNER JOIN catalogo_estatus ce ON a.id_estatus = ce.id_estatus
-            LEFT JOIN detalles_atletas da ON a.id_atleta = da.id_atleta
+            LEFT JOIN detalles_atletas da ON u.id_usuario = da.id_usuario
             LEFT JOIN catalogo_tallas tc ON da.id_talla_camisa = tc.id_talla
             WHERE a.id_entrenador = $1
             ORDER BY u.primer_apellido ASC
