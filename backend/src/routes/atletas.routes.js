@@ -8,6 +8,9 @@ router.use(authMiddleware);
 
 // NOTA V5: Se eliminó router.post('/') porque el registro ahora se hace progresivamente en /api/auth/registro/atleta y /api/perfiles/...
 
+// NUEVO V6: Validar si la CURP ya existe (Debe ir antes de /:id para que Express no se confunda)
+router.get('/validar-curp/:curp', atletasController.validarCURP);
+
 // Obtener el perfil completo de un atleta
 router.get('/:id', atletasController.obtenerAtletaPorId);
 

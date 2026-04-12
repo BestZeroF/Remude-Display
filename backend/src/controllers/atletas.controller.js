@@ -28,6 +28,38 @@ const verificarPermisosAtleta = async (id_atleta_param, id_usuario_token, id_rol
     return { error: 'Acceso denegado. No tienes permisos sobre este atleta.', status: 403 };
 };
 
+// ==========================================
+// NUEVO: GET /api/atletas/validar-curp/:curp
+// ==========================================
+atletasController.validarCURP = async (req, res) => {
+    try {
+        const { curp } = req.params;
+        
+        // 1. Buscar en la tabla de atletas (incluso si son "avances")
+        const queryAtletas = 'SELECT curp FROM atletas WHERE curp = $1';
+        const { rows: rowsAtletas } = await db.query(queryAtletas, [curp]);
+        
+        if (rowsAtletas.length > 0) {
+            return res.json({ existe: true });
+        }
+
+        // 2. Buscar en la tabla de entrenadores (por si acaso un entrenador intenta registrarse como atleta)
+        const queryEntrenadores = 'SELECT curp FROM entrenadores WHERE curp = $1';
+        const { rows: rowsEntrenadores } = await db.query(queryEntrenadores, [curp]);
+
+        if (rowsEntrenadores.length > 0) {
+            return res.json({ existe: true });
+        }
+
+        // Si no existe en ningún lado
+        return res.json({ existe: false });
+        
+    } catch (error) {
+        console.error('Error al validar CURP:', error);
+        res.status(500).json({ message: 'Error interno del servidor al validar la CURP.' });
+    }
+};
+
 // GET /api/atletas/:id (Perfil completo con JOINs a todas las tablas ajustadas a id_usuario)
 atletasController.obtenerAtletaPorId = async (req, res) => {
     try {

@@ -124,6 +124,20 @@ authController.registroEntrenador = async (req, res) => {
     }
 
     try {
+        // NUEVO V6: Validación manual de la CURP antes de iniciar la transacción
+        if (curp) {
+            const checkCurpQuery = `
+                SELECT curp FROM entrenadores WHERE curp = $1 
+                UNION 
+                SELECT curp FROM atletas WHERE curp = $1
+            `;
+            const checkCurp = await db.query(checkCurpQuery, [curp]);
+            
+            if (checkCurp.rows.length > 0) {
+                return res.status(409).json({ message: 'La CURP ingresada ya se encuentra registrada en el sistema.' });
+            }
+        }
+
         await db.query('BEGIN');
 
         const salt = await bcrypt.genSalt(10);
