@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ArrowLeft, CheckCircle, Search, User, MapPin, Activity, Shirt, AlertTriangle, X } from 'lucide-react';
 
 const ESTADO_INICIAL_FORMULARIO = {
@@ -31,6 +31,7 @@ const getID = (catalogo, valorStr) => {
   return mapCatalogo[catalogo][valorStr.toUpperCase()] || null;
 };
 
+// Se eliminó 'cambiarVistaPanel' de las propiedades para limpiar la advertencia de ESLint
 export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNavegacion, cancelarNavegacion, solicitarNavegacion }) {
   const [pasoActual, setPasoActual] = useState(1);
   const totalPasos = 5;
@@ -41,6 +42,23 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   
   const [notificacion, setNotificacion] = useState({ visible: false, mensaje: '', tipo: 'exito' });
   const [datosFormulario, setDatosFormulario] = useState(ESTADO_INICIAL_FORMULARIO);
+
+  const totalCampos = Object.keys(datosFormulario).length - 1; 
+  const camposLlenos = Object.values(datosFormulario).filter(valor => typeof valor === 'string' && valor.trim() !== '').length;
+  const porcentajeProgreso = (camposLlenos / totalCampos) * 100;
+
+  // LÓGICA DE NAVEGACIÓN CORREGIDA: Si está en el Paso 1, sale sin preguntar.
+  useEffect(() => {
+    if (intentoNavegacion && pasoActual === 1) {
+      if (intentoNavegacion === 'inscripcion') {
+        setDatosFormulario(ESTADO_INICIAL_FORMULARIO);
+        setPasoActual(1);
+        cancelarNavegacion();
+      } else {
+        confirmarNavegacion(intentoNavegacion);
+      }
+    }
+  }, [intentoNavegacion, pasoActual, cancelarNavegacion, confirmarNavegacion]);
 
   const manejarCambio = (campo, valor) => {
     setDatosFormulario({ ...datosFormulario, [campo]: valor });
@@ -76,8 +94,14 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      if (respuesta.status === 404) {
+         setErrorValidacion('Error 404: El equipo de backend aún no ha creado el endpoint para validar la CURP.');
+         return;
+      }
+
+      const data = await respuesta.json();
+
       if (respuesta.ok) {
-        const data = await respuesta.json();
         if (data.existe) {
           setAtletaExistente({
             nombre: data.atleta?.nombre || 'Nombre Desconocido',
@@ -87,14 +111,11 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
           setPasoActual(2);
         }
       } else {
-         const data = await respuesta.json();
-         setErrorValidacion(data.message || 'Error al validar la CURP.');
-         // YA NO PERMITIMOS AVANZAR SI EL ENDPOINT FALLA (Validación estricta)
+         setErrorValidacion(data.message || 'Error al validar la CURP con el servidor.');
       }
     } catch (error) {
       console.error('Error validando CURP:', error);
-      setErrorValidacion('Error de conexión con el servidor. No se pudo validar la CURP.');
-      // YA NO PERMITIMOS AVANZAR SI NO HAY CONEXIÓN (Validación estricta)
+      setErrorValidacion('Error de conexión. El servidor no responde a la validación de CURP.');
     } finally {
       setCargando(false);
     }
@@ -102,10 +123,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
 
   const retrocederPaso = () => setPasoActual(prev => Math.max(prev - 1, 1));
   const avanzarPaso = () => setPasoActual(prev => Math.min(prev + 1, totalPasos));
-
-  const totalCampos = Object.keys(datosFormulario).length - 1; 
-  const camposLlenos = Object.values(datosFormulario).filter(valor => typeof valor === 'string' && valor.trim() !== '').length;
-  const porcentajeProgreso = (camposLlenos / totalCampos) * 100;
 
   const enviarFormulario = async (esAvance = false, destinoFinal = null) => {
     setCargando(true);
@@ -123,7 +140,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
           setDatosFormulario(ESTADO_INICIAL_FORMULARIO);
           setPasoActual(1);
           cancelarNavegacion();
-          setNotificacion({ visible: true, mensaje: `Avance guardado${textoAtleta}. Formulario listo para otro registro.`, tipo: 'exito' });
+          setNotificacion({ visible: true, mensaje: `Se han guardado los avances con éxito${textoAtleta}. Formulario listo para un nuevo registro.`, tipo: 'exito' });
         } else {
           confirmarNavegacion(destinoFinal);
         }
@@ -131,7 +148,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
       }
 
       if (esAvance) {
-        setNotificacion({ visible: true, mensaje: `Se ha guardado tu avance${textoAtleta}.`, tipo: 'exito' });
+        setNotificacion({ visible: true, mensaje: `Se han guardado los avances con éxito${textoAtleta}.`, tipo: 'exito' });
       } else {
         setNotificacion({ visible: true, mensaje: `¡Registro finalizado con éxito${textoAtleta}!`, tipo: 'exito' });
       }
@@ -157,10 +174,13 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
         };
 
         const resBase = await fetch('http://localhost:3000/api/auth/registro/atleta', { method: 'POST', headers, body: JSON.stringify(payloadBase) });
+        const dataBase = await resBase.json();
+        
         if (resBase.ok) {
-          const dataBase = await resBase.json();
           currentUserId = dataBase.id_usuario;
           setDatosFormulario(prev => ({ ...prev, idUsuarioAtleta: currentUserId }));
+        } else {
+          throw new Error(dataBase.message || dataBase.error || dataBase.detail || "Error al registrar el usuario base del atleta.");
         }
       }
 
@@ -221,7 +241,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
       
     } catch (error) {
       console.error('Error enviando datos:', error);
-      setNotificacion({ visible: true, mensaje: 'Error al conectar con el servidor. Se guardó el progreso de forma local.', tipo: 'error' });
+      setNotificacion({ visible: true, mensaje: error.message || 'Error al conectar con el servidor.', tipo: 'error' });
     } finally {
       setCargando(false);
     }
@@ -230,7 +250,8 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   return (
     <div className="max-w-4xl mx-auto w-full animate-fade-in pb-10 relative">
       
-      {intentoNavegacion && (
+      {/* MODAL DE NAVEGACIÓN INSEGURA - AHORA SOLO EN PASO 2 EN ADELANTE */}
+      {intentoNavegacion && pasoActual > 1 && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full">
             <div className="flex items-center mb-4">
@@ -277,7 +298,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
       )}
 
       {notificacion.visible && (
-        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-60 w-[90%] max-w-2xl p-4 rounded-2xl shadow-xl flex justify-between items-start animate-fade-in-down ${notificacion.tipo === 'exito' ? 'bg-[#10b981] text-white' : 'bg-[#ef4444] text-white'}`}>
+        <div className={`fixed top-8 left-1/2 transform -translate-x-1/2 z-60 w-[90%] max-w-2xl p-4 rounded-xl shadow-xl flex justify-between items-start animate-fade-in-down ${notificacion.tipo === 'exito' ? 'bg-[#10b981] text-white' : 'bg-[#ef4444] text-white'}`}>
           <div className="flex items-start">
             {notificacion.tipo === 'exito' ? <CheckCircle className="w-6 h-6 mr-3 text-white shrink-0 mt-0.5" /> : <AlertTriangle className="w-6 h-6 mr-3 text-white shrink-0 mt-0.5" />}
             <div className="flex flex-col">
@@ -297,7 +318,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
               )}
             </div>
           </div>
-          <button onClick={() => setNotificacion({ ...notificacion, visible: false })} className="p-1.5 hover:bg-black/10 rounded-lg transition-colors ml-4 shrink-0">
+          <button onClick={() => setNotificacion({ ...notificacion, visible: false })} className="p-1 hover:bg-black/10 rounded-lg transition-colors ml-4 shrink-0">
             <X className="w-5 h-5 text-white" />
           </button>
         </div>

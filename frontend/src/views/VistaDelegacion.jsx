@@ -6,7 +6,6 @@ function DropdownFiltro({ label, opciones, seleccionados, setSeleccionados }) {
   const [abierto, setAbierto] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Cerrar al hacer clic afuera
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -29,7 +28,8 @@ function DropdownFiltro({ label, opciones, seleccionados, setSeleccionados }) {
     <div className="relative" ref={dropdownRef}>
       <button 
         onClick={() => setAbierto(!abierto)} 
-        className={`bg-white border text-sm rounded-xl py-3.5 px-4 outline-none transition-all font-medium flex items-center justify-between min-w-40 shadow-sm hover:border-gray-300 ${abierto || seleccionados.length > 0 ? 'border-[#c2a649] text-gray-900 ring-1 ring-[#c2a649]/20' : 'border-gray-200 text-gray-700'}`}
+        // APLICADO: Hover más oscuro (bg-gray-100 y border-gray-400)
+        className={`bg-white border text-sm rounded-xl py-3.5 px-4 outline-none transition-all font-medium flex items-center justify-between min-w-40 shadow-sm hover:bg-gray-100 hover:border-gray-400 ${abierto || seleccionados.length > 0 ? 'border-[#c2a649] text-gray-900 ring-1 ring-[#c2a649]/20' : 'border-gray-200 text-gray-700'}`}
       >
         <span>{label} {seleccionados.length > 0 && `(${seleccionados.length})`}</span>
       </button>
@@ -59,13 +59,11 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
   const [cargando, setCargando] = useState(true);
   const [ordenAscendente, setOrdenAscendente] = useState(true);
   
-  // Estados para los filtros seleccionados (arrays vacíos = sin filtro)
   const [filtroEstatus, setFiltroEstatus] = useState([]);
   const [filtroDisciplina, setFiltroDisciplina] = useState([]);
   const [filtroDivision, setFiltroDivision] = useState([]);
   const [filtroClub, setFiltroClub] = useState([]);
   
-  // Datos simulados (Mock data actualizado)
   const [atletas, setAtletas] = useState([]);
 
   useEffect(() => {
@@ -81,7 +79,6 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
     }, 800);
   }, []);
 
-  // Extraer opciones únicas y ordenarlas alfabéticamente (A-Z)
   const opcionesEstatus = ["En revisión", "Pendiente", "Rechazado", "Verificado"];
   const opcionesDisciplina = [...new Set(atletas.map(a => a.disciplina))].sort((a, b) => a.localeCompare(b));
   const opcionesDivision = [...new Set(atletas.map(a => a.division))].sort((a, b) => a.localeCompare(b));
@@ -101,7 +98,6 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
     return nombre.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
-  // LÓGICA DE FILTRADO, BÚSQUEDA Y ORDENAMIENTO
   const atletasProcesados = atletas
     .filter(atleta => {
       const cumpleBusqueda = busqueda === '' || 
@@ -123,12 +119,10 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
   return (
     <div className="max-w-7xl mx-auto w-full animate-fade-in pb-10 flex flex-col h-[calc(100vh-140px)]">
       
-      {/* SECCIÓN SUPERIOR: Búsqueda y Filtros */}
       <div className="bg-white rounded-3xl shadow-lg p-6 mb-6 mt-2 shrink-0">
         <div className="flex flex-col xl:flex-row gap-4 justify-between items-center">
           
-          {/* Barra de búsqueda mejorada (Borde y Sombra) */}
-          <div className="flex-1 w-full relative bg-white border border-gray-200 rounded-2xl shadow-sm transition-all hover:border-gray-300 focus-within:border-[#7a2031] focus-within:ring-1 focus-within:ring-[#7a2031] focus-within:hover:border-[#7a2031]">
+          <div className="flex-1 w-full relative bg-white border border-gray-200 rounded-2xl shadow-sm transition-all hover:border-gray-400 hover:bg-gray-50 focus-within:border-[#7a2031] focus-within:ring-1 focus-within:ring-[#7a2031] focus-within:bg-white focus-within:hover:border-[#7a2031]">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <Search className="h-5 w-5 text-gray-500" />
             </div>
@@ -141,17 +135,15 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
             />
           </div>
 
-          {/* Filtros Multi-selección */}
           <div className="flex flex-wrap gap-3 w-full xl:w-auto">
             <DropdownFiltro label="Estado expediente" opciones={opcionesEstatus} seleccionados={filtroEstatus} setSeleccionados={setFiltroEstatus} />
             <DropdownFiltro label="Disciplina" opciones={opcionesDisciplina} seleccionados={filtroDisciplina} setSeleccionados={setFiltroDisciplina} />
             <DropdownFiltro label="División" opciones={opcionesDivision} seleccionados={filtroDivision} setSeleccionados={setFiltroDivision} />
             <DropdownFiltro label="Club" opciones={opcionesClub} seleccionados={filtroClub} setSeleccionados={setFiltroClub} />
             
-            {/* Botón de ordenamiento alfabético */}
             <button 
               onClick={() => setOrdenAscendente(!ordenAscendente)}
-              className="bg-white border border-gray-200 shadow-sm p-3.5 rounded-xl hover:bg-gray-50 hover:border-gray-300 hover:text-[#7a2031] transition-all text-gray-600 flex items-center justify-center"
+              className="bg-white border border-gray-200 shadow-sm p-3.5 rounded-xl hover:bg-gray-100 hover:border-gray-400 hover:text-[#7a2031] transition-all text-gray-600 flex items-center justify-center"
               title={ordenAscendente ? "Ordenar Z-A" : "Ordenar A-Z"}
             >
               {ordenAscendente ? <ArrowDownAZ className="w-5 h-5" /> : <ArrowUpZA className="w-5 h-5" />}
@@ -174,7 +166,6 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
         </div>
       </div>
 
-      {/* SECCIÓN INFERIOR: Lista de Atletas (Con Scroll Interno) */}
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 pb-12">
         <style>{`
           .custom-scrollbar::-webkit-scrollbar { width: 8px; }
@@ -189,11 +180,9 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
           <div className="text-center py-12 bg-white rounded-3xl shadow-sm text-gray-500 border border-gray-100">No se encontraron atletas que coincidan con los filtros.</div>
         ) : (
           atletasProcesados.map(atleta => (
-            <div key={atleta.id} className="bg-white rounded-3xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col md:flex-row items-center gap-6 cursor-pointer group" onClick={() => alert(`Ir al perfil de ${atleta.nombre_completo}`)}>
+            <div key={atleta.id} className="bg-white rounded-3xl p-5 shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col md:flex-row items-center gap-6 cursor-pointer group" onClick={() => cambiarVistaPanel('perfilAtleta')}>
               
-              {/* Info Atleta y Foto */}
               <div className="flex items-center flex-1 w-full md:w-auto">
-                {/* Contenedor de Foto o Iniciales */}
                 <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-100 text-gray-400 flex items-center justify-center font-black text-xl shrink-0 shadow-inner border border-gray-200">
                   {atleta.foto ? (
                     <img src={atleta.foto} alt={atleta.nombre_completo} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; }} />
@@ -207,26 +196,22 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
                   <div className="flex items-center mt-1.5 text-[11px] font-bold text-gray-500 uppercase tracking-widest flex-wrap gap-x-2 gap-y-1">
                     <span className="text-[#c2a649] bg-[#c2a649]/10 px-2 py-0.5 rounded-md">{atleta.disciplina}</span>
                     <span className="text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">{atleta.division}</span>
-                    {/* El atributo native title de HTML muestra el tooltip al pasar el cursor */}
                     <span className="text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md truncate max-w-37.5 sm:max-w-50 lg:max-w-75" title={atleta.club}>{atleta.club}</span>
                   </div>
                   <div className="mt-1.5 font-mono text-xs text-gray-400">{atleta.curp}</div>
                 </div>
               </div>
 
-              {/* Status Badge (Sin bordes ni punto, solo sombra sutil) */}
               <div className="w-full md:w-auto flex justify-start md:justify-center px-4">
                 <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${getColorEstatus(atleta.estatus)}`}>
                   {atleta.estatus}
                 </span>
               </div>
 
-              {/* Progress & Actions */}
               <div className="flex items-center space-x-3 w-full md:w-auto justify-end border-t md:border-t-0 border-gray-100 pt-4 md:pt-0">
                 
-                {/* Ficha Progreso */}
                 <div className="flex flex-col items-center" onClick={(e) => { e.stopPropagation(); alert(`Ir a editar ficha de ${atleta.nombre_completo}`); }}>
-                  <button className="p-3 bg-gray-50 rounded-xl hover:bg-[#7a2031] hover:text-white transition-colors text-gray-600 relative" title="Editar ficha técnica">
+                  <button className="p-3 bg-gray-50 rounded-xl hover:bg-[#7a2031] hover:text-white transition-colors text-gray-600 relative border border-transparent hover:border-[#7a2031]" title="Editar ficha técnica">
                     <Edit className="w-5 h-5" />
                     <span className={`absolute -top-2 -right-2 text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-sm border border-white ${atleta.progreso_ficha === 100 ? 'bg-green-500 text-white' : 'bg-amber-400 text-amber-950'}`}>
                       {atleta.progreso_ficha}%
@@ -235,9 +220,8 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
                   <span className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-widest">Ficha</span>
                 </div>
 
-                {/* Docs Progreso */}
                 <div className="flex flex-col items-center" onClick={(e) => { e.stopPropagation(); alert(`Ir a subir documentos de ${atleta.nombre_completo}`); }}>
-                  <button className="p-3 bg-gray-50 rounded-xl hover:bg-[#c2a649] hover:text-white transition-colors text-gray-600 relative" title="Subir documentos">
+                  <button className="p-3 bg-gray-50 rounded-xl hover:bg-[#c2a649] hover:text-white transition-colors text-gray-600 relative border border-transparent hover:border-[#c2a649]" title="Subir documentos">
                     <FileText className="w-5 h-5" />
                     <span className={`absolute -top-2 -right-2 text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-sm border border-white ${atleta.progreso_docs === 100 ? 'bg-green-500 text-white' : 'bg-amber-400 text-amber-950'}`}>
                       {atleta.progreso_docs}%
@@ -248,7 +232,6 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
 
                 <div className="w-px h-10 bg-gray-200 mx-2 hidden sm:block"></div>
 
-                {/* Flecha indicadora de acción principal */}
                 <button className="p-3 text-gray-300 group-hover:text-[#7a2031] transition-colors" title="Ver perfil completo">
                   <ChevronRight className="w-6 h-6" />
                 </button>

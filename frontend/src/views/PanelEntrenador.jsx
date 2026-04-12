@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Menu, Home, User, UserPlus, Users, LogOut, Bell, 
   HelpCircle, ChevronRight, Clock, AlertCircle, 
-  CheckCircle, XCircle 
+  CheckCircle, XCircle, FileText, Edit, Info
 } from 'lucide-react';
 import SidebarItem from '../components/SidebarItem';
 import CardEstado from '../components/CardEstado';
 import VistaInscripcionAtleta from './VistaInscripcionAtleta'; 
 import VistaDelegacion from './VistaDelegacion'; 
+import VistaPerfilAtleta from './VistaPerfilAtleta'; 
 
 import logoBlanco from '../assets/logo-blanco-remude.png';
 import logoIcono from '../assets/logo-icono.png'; 
@@ -32,6 +33,38 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
     const fetchDashboard = async () => {
       const token = localStorage.getItem('token_remude');
 
+      if (token === 'MODO_PRUEBA') {
+        setDatosDashboard({
+          usuario: {
+            nombre: `${usuarioAutenticado?.nombre || 'Victoria'} ${usuarioAutenticado?.apellidos || 'Piña'}`,
+            ubicacion: "Bacalar, Quintana Roo",
+            disciplina: "Atletismo (Modo Prueba)"
+          },
+          notificaciones: [
+            { id: 1, texto: "La CURP de Ana López fue rechazada por inconsistencias.", leida: false },
+            { id: 2, texto: "Atleta Gerardo Amaro validado con éxito.", leida: true }
+          ],
+          atletas: {
+            pendientes: [
+              { id: 105, nombre_completo: "David Jhonson Alvaro", progreso_ficha: 45, progreso_docs: 0 }
+            ],
+            enRevision: [
+              { id: 107, nombre_completo: "Carlos Manuel Sosa", progreso_ficha: 100, progreso_docs: 100 }
+            ],
+            validados: [
+              { id: 104, nombre_completo: "Gerardo Amaro", progreso_ficha: 100, progreso_docs: 100 },
+              { id: 106, nombre_completo: "Victoria Isabel Piña Poot", progreso_ficha: 100, progreso_docs: 80 }
+            ],
+            rechazados: [
+              { id: 108, nombre_completo: "Ana María López", progreso_ficha: 100, progreso_docs: 20 }
+            ]
+          },
+          totalAtletas: 5
+        });
+        setCargando(false);
+        return;
+      }
+
       try {
         const URL_DASHBOARD = 'http://localhost:3000/api/entrenadores/dashboard'; 
         
@@ -43,6 +76,9 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
         
         if (respuesta.ok) {
           const data = await respuesta.json();
+          
+          const hayAtletasBD = data.totalAtletas > 0;
+
           setDatosDashboard({
             usuario: {
               nombre: `${data.entrenador?.nombre || usuarioAutenticado?.nombre || ''} ${data.entrenador?.apellidos || usuarioAutenticado?.apellidos || ''}`,
@@ -50,8 +86,13 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
               disciplina: data.entrenador?.especialidad || "Disciplina no asignada"
             },
             notificaciones: data.notificaciones || [],
-            atletas: data.atletas || { pendientes: [], enRevision: [], validados: [], rechazados: [] },
-            totalAtletas: data.totalAtletas || 0
+            atletas: hayAtletasBD ? data.atletas : { 
+              pendientes: [{ id: 105, nombre_completo: "David Jhonson Alvaro", progreso_ficha: 45, progreso_docs: 0 }],
+              enRevision: [{ id: 107, nombre_completo: "Carlos Manuel Sosa", progreso_ficha: 100, progreso_docs: 100 }],
+              validados: [{ id: 104, nombre_completo: "Gerardo Amaro", progreso_ficha: 100, progreso_docs: 100 }, { id: 106, nombre_completo: "Victoria Isabel Piña Poot", progreso_ficha: 100, progreso_docs: 80 }],
+              rechazados: [{ id: 108, nombre_completo: "Ana María López", progreso_ficha: 100, progreso_docs: 20 }]
+            },
+            totalAtletas: hayAtletasBD ? data.totalAtletas : 5
           });
         } else {
            console.error("Error al cargar el dashboard");
@@ -129,7 +170,7 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
             <SidebarItem icono={UserPlus} etiqueta="Inscribir atleta" estaAbierto={sidebarAbierta} activo={vistaPanel === 'inscripcion'} />
           </div>
           <div onClick={() => handleMenuClick('delegacion')}>
-            <SidebarItem icono={Users} etiqueta="Mi delegación" estaAbierto={sidebarAbierta} activo={vistaPanel === 'delegacion'} />
+            <SidebarItem icono={Users} etiqueta="Mi delegación" estaAbierto={sidebarAbierta} activo={vistaPanel === 'delegacion' || vistaPanel === 'perfilAtleta'} />
           </div>
         </nav>
 
@@ -150,28 +191,22 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
             <img src={logoMunicipio} alt="Municipio de Bacalar" className="h-14 object-contain drop-shadow-sm" />
             <div className="hidden sm:block w-px h-10 bg-gray-200 mx-5 rounded-full"></div>
             
-            {/* LÓGICA DE ENCABEZADO CONSISTENTE: Todos los títulos comparten el mismo estilo */}
-            {vistaPanel === 'resumen' ? (
-              <div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug">
-                  Hola, {cargando ? 'Cargando...' : datosDashboard.usuario.nombre}
-                </h2>
-                <p className="text-xs md:text-sm font-medium text-gray-500 mt-1">
-                  {datosDashboard.usuario.ubicacion} • {datosDashboard.usuario.disciplina}
-                </p>
-              </div>
-            ) : (
-              <div>
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug">
-                  {vistaPanel === 'delegacion' && 'Mi delegación'}
-                  {vistaPanel === 'inscripcion' && 'Inscripción de atleta'}
-                  {vistaPanel === 'perfil' && 'Perfil del entrenador'}
-                </h2>
-                <p className="text-xs md:text-sm font-medium text-gray-500 mt-1">
-                  Panel de gestión y control
-                </p>
-              </div>
-            )}
+            <div>
+              <h2 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug">
+                {vistaPanel === 'resumen' && `Hola, ${cargando ? '...' : datosDashboard.usuario.nombre}`}
+                {vistaPanel === 'delegacion' && 'Mi delegación'}
+                {vistaPanel === 'inscripcion' && 'Inscripción de atleta'}
+                {vistaPanel === 'perfil' && 'Perfil del entrenador'}
+                {vistaPanel === 'perfilAtleta' && 'Ficha técnica'}
+              </h2>
+              <p className="text-xs md:text-sm font-medium text-gray-500 mt-1">
+                {vistaPanel === 'resumen' && `${datosDashboard.usuario.ubicacion} • ${datosDashboard.usuario.disciplina}`}
+                {vistaPanel === 'delegacion' && 'Gestión y seguimiento de expedientes deportivos'}
+                {vistaPanel === 'inscripcion' && 'Completa los datos estructurados para el padrón municipal'}
+                {vistaPanel === 'perfil' && 'Ajustes y preferencias de tu cuenta'}
+                {vistaPanel === 'perfilAtleta' && 'Expediente oficial e información detallada'}
+              </p>
+            </div>
             
           </div>
 
@@ -208,43 +243,65 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
           </div>
         </header>
 
-        <main className="flex-1 overflow-hidden px-8 pt-6 flex flex-col relative bg-gray-50/50">
+        {/* main maneila el scroll, permitiendo que el footer se quede naturalmente abajo */}
+        <main className="flex-1 overflow-y-auto px-8 pt-6 flex flex-col bg-gray-50/50 relative">
           
           {vistaPanel === 'resumen' && (
-             <div className="max-w-6xl mx-auto w-full animate-fade-in pb-20 overflow-y-auto h-full pr-2">
+             <div className="flex-1 max-w-6xl mx-auto w-full animate-fade-in pb-10">
+                
+                {/* TÍTULO Y LEYENDA (Modificados para mayor jerarquía) */}
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-gray-200/60 pb-4">
+                  <h3 className="text-2xl font-black text-gray-900 uppercase tracking-widest">
+                    ESTADO DE LOS EXPEDIENTES
+                  </h3>
+                  
+                  <div className="inline-flex items-center bg-white px-4 py-2.5 rounded-xl shadow-sm border border-gray-100">
+                    <Info className="w-4 h-4 text-[#c2a649] mr-3" />
+                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center">
+                      <Edit className="w-3.5 h-3.5 text-gray-400 mx-1.5" /> Ficha Técnica
+                      <span className="mx-3 text-gray-300">|</span>
+                      <FileText className="w-3.5 h-3.5 text-gray-400 mx-1.5" /> Expediente
+                    </span>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
                   <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <CardEstado 
                       titulo="Pendientes" cantidad={datosDashboard.atletas.pendientes.length} 
                       icono={Clock} colorFondo="bg-gray-900" colorTexto="text-white"
                       atletas={datosDashboard.atletas.pendientes}
+                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
                     />
                     <CardEstado 
                       titulo="En revisión" cantidad={datosDashboard.atletas.enRevision.length} 
                       icono={AlertCircle} colorFondo="bg-amber-500" colorTexto="text-white"
                       atletas={datosDashboard.atletas.enRevision}
+                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
                     />
                     <CardEstado 
                       titulo="Validados" cantidad={datosDashboard.atletas.validados.length} 
                       icono={CheckCircle} colorFondo="bg-emerald-600" colorTexto="text-white"
                       atletas={datosDashboard.atletas.validados}
+                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
                     />
                     <CardEstado 
                       titulo="Rechazados" cantidad={datosDashboard.atletas.rechazados.length} 
                       icono={XCircle} colorFondo="bg-rose-600" colorTexto="text-white"
                       atletas={datosDashboard.atletas.rechazados}
+                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
                     />
                   </div>
 
                   <div className="flex flex-col gap-6">
-                    <div onClick={() => handleMenuClick('inscripcion')} className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all cursor-pointer group flex flex-col justify-center items-center text-center h-48 shrink-0">
+                    <div onClick={() => handleMenuClick('inscripcion')} className="bg-white rounded-3xl p-8 shadow-xl hover:shadow-2xl transition-all cursor-pointer group flex flex-col justify-center items-center text-center h-48 shrink-0 border border-gray-100">
                       <div className="w-16 h-16 bg-[#7a2031]/10 rounded-full flex justify-center items-center mb-4 group-hover:scale-110 transition-transform">
                         <UserPlus className="w-8 h-8 text-[#7a2031]" />
                       </div>
                       <h3 className="text-xl font-bold text-gray-900">Registrar un nuevo deportista</h3>
                     </div>
 
-                    <div className="bg-white rounded-3xl p-8 shadow-xl flex flex-col flex-1 min-h-96">
+                    <div className="bg-white rounded-3xl p-8 shadow-xl flex flex-col flex-1 min-h-96 border border-gray-100">
                       <div className="mb-6">
                         <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Total de atletas</p>
                         <h3 className="text-5xl font-black text-gray-900">{datosDashboard.totalAtletas}</h3>
@@ -252,37 +309,37 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
 
                       <div className="space-y-6 flex-1">
                         <div>
-                          <div className="flex justify-between text-xs font-bold text-gray-500 mb-2 uppercase">
-                            <span>Hombres (5)</span>
-                            <span>Mujeres (5)</span>
+                          <div className="flex justify-between text-xs font-bold text-gray-500 mb-2 uppercase tracking-widest">
+                            <span>Hombres (3)</span>
+                            <span>Mujeres (2)</span>
                           </div>
                           <div className="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden">
-                            <div className="bg-[#4a90e2] h-full transition-all duration-1000" style={{ width: '50%' }}></div>
-                            <div className="bg-[#e91e63] h-full transition-all duration-1000" style={{ width: '50%' }}></div>
+                            <div className="bg-[#4a90e2] h-full transition-all duration-1000" style={{ width: '60%' }}></div>
+                            <div className="bg-[#e91e63] h-full transition-all duration-1000" style={{ width: '40%' }}></div>
                           </div>
                         </div>
 
                         <div>
-                          <p className="text-xs font-bold text-gray-500 mb-4 uppercase">Distribución por edades</p>
+                          <p className="text-xs font-bold text-gray-500 mb-4 uppercase tracking-widest">Distribución por edades</p>
                           <div className="space-y-3">
                             <div className="flex items-center text-sm">
                               <span className="w-14 text-gray-600 font-medium">10-14</span>
                               <div className="flex-1 h-2 bg-gray-100 rounded-full ml-2 overflow-hidden">
                                 <div className="bg-[#c2a649] h-full rounded-full transition-all duration-1000" style={{ width: '20%' }}></div>
                               </div>
-                              <span className="ml-3 font-bold text-gray-800">2</span>
+                              <span className="ml-3 font-bold text-gray-800">1</span>
                             </div>
                             <div className="flex items-center text-sm">
                               <span className="w-14 text-gray-600 font-medium">15-18</span>
                               <div className="flex-1 h-2 bg-gray-100 rounded-full ml-2 overflow-hidden">
-                                <div className="bg-[#c2a649] h-full rounded-full transition-all duration-1000" style={{ width: '70%' }}></div>
+                                <div className="bg-[#c2a649] h-full rounded-full transition-all duration-1000" style={{ width: '60%' }}></div>
                               </div>
-                              <span className="ml-3 font-bold text-gray-800">7</span>
+                              <span className="ml-3 font-bold text-gray-800">3</span>
                             </div>
                             <div className="flex items-center text-sm">
                               <span className="w-14 text-gray-600 font-medium">19-25</span>
                               <div className="flex-1 h-2 bg-gray-100 rounded-full ml-2 overflow-hidden">
-                                <div className="bg-[#c2a649] h-full rounded-full transition-all duration-1000" style={{ width: '10%' }}></div>
+                                <div className="bg-[#c2a649] h-full rounded-full transition-all duration-1000" style={{ width: '20%' }}></div>
                               </div>
                               <span className="ml-3 font-bold text-gray-800">1</span>
                             </div>
@@ -303,7 +360,7 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
           )}
 
           {vistaPanel === 'inscripcion' && (
-            <div className="overflow-y-auto h-full pr-2">
+            <div className="flex-1 pb-10">
               <VistaInscripcionAtleta 
                 intentoNavegacion={intentoNavegacion}
                 confirmarNavegacion={confirmarNavegacion}
@@ -315,12 +372,21 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
           )}
 
           {vistaPanel === 'delegacion' && (
-            <VistaDelegacion cambiarVistaPanel={setVistaPanel} />
+            <div className="flex-1 pb-10">
+              <VistaDelegacion cambiarVistaPanel={setVistaPanel} />
+            </div>
+          )}
+          
+          {vistaPanel === 'perfilAtleta' && (
+            <div className="flex-1 pb-10">
+              <VistaPerfilAtleta cambiarVistaPanel={setVistaPanel} />
+            </div>
           )}
 
-          <footer className="absolute bottom-0 left-0 right-0 py-6 px-8 bg-transparent pointer-events-none w-full text-xs text-gray-400 font-bold uppercase tracking-widest flex flex-col sm:flex-row justify-between items-center gap-4">
+          {/* Footer libre en la base, natural al scroll */}
+          <footer className="mt-auto py-6 w-full text-xs text-gray-400 font-bold uppercase tracking-widest flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-200/50">
             <span>© {new Date().getFullYear()} MUNICIPIO DE BACALAR.</span>
-            <div className="flex space-x-6 pointer-events-auto">
+            <div className="flex space-x-6">
               <button onClick={() => cambiarVista('acercaDe')} className="hover:text-gray-900 transition-colors">Acerca de</button>
               <button className="hover:text-gray-900 transition-colors">Aviso de Privacidad</button>
               <button className="hover:text-gray-900 transition-colors">Contacto</button>
