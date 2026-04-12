@@ -29,26 +29,54 @@ const verificarPermisosAtleta = async (id_atleta_param, id_usuario_token, id_rol
 };
 
 // ==========================================
-// NUEVO: GET /api/atletas/validar-curp/:curp
+// NUEVO V6: GET /api/atletas/validar-curp/:curp
 // ==========================================
 atletasController.validarCURP = async (req, res) => {
     try {
         const { curp } = req.params;
         
-        // 1. Buscar en la tabla de atletas (incluso si son "avances")
-        const queryAtletas = 'SELECT curp FROM atletas WHERE curp = $1';
+        // 1. Buscar en la tabla de atletas con JOIN para obtener nombre y entrenador
+        const queryAtletas = `
+            SELECT 
+                a.curp, 
+                CONCAT(u.nombre, ' ', u.primer_apellido, ' ', COALESCE(u.segundo_apellido, '')) AS nombre_completo,
+                CONCAT(ue.nombre, ' ', ue.primer_apellido, ' ', COALESCE(ue.segundo_apellido, '')) AS entrenador_actual
+            FROM atletas a
+            INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
+            LEFT JOIN entrenadores e ON a.id_entrenador = e.id_entrenador
+            LEFT JOIN usuarios ue ON e.id_usuario = ue.id_usuario
+            WHERE a.curp = $1
+        `;
         const { rows: rowsAtletas } = await db.query(queryAtletas, [curp]);
         
         if (rowsAtletas.length > 0) {
-            return res.json({ existe: true });
+            const atleta = rowsAtletas[0];
+            return res.json({ 
+                existe: true,
+                tipo: 'atleta',
+                nombre: atleta.nombre_completo.trim().replace(/\s+/g, ' '),
+                entrenadorActual: atleta.entrenador_actual ? atleta.entrenador_actual.trim().replace(/\s+/g, ' ') : 'Sin entrenador asignado'
+            });
         }
 
-        // 2. Buscar en la tabla de entrenadores (por si acaso un entrenador intenta registrarse como atleta)
-        const queryEntrenadores = 'SELECT curp FROM entrenadores WHERE curp = $1';
+        // 2. Buscar en la tabla de entrenadores con JOIN para obtener su nombre
+        const queryEntrenadores = `
+            SELECT 
+                e.curp,
+                CONCAT(u.nombre, ' ', u.primer_apellido, ' ', COALESCE(u.segundo_apellido, '')) AS nombre_completo
+            FROM entrenadores e
+            INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+            WHERE e.curp = $1
+        `;
         const { rows: rowsEntrenadores } = await db.query(queryEntrenadores, [curp]);
 
         if (rowsEntrenadores.length > 0) {
-            return res.json({ existe: true });
+            const entrenador = rowsEntrenadores[0];
+            return res.json({ 
+                existe: true,
+                tipo: 'entrenador',
+                nombre: entrenador.nombre_completo.trim().replace(/\s+/g, ' ')
+            });
         }
 
         // Si no existe en ningún lado
