@@ -1,0 +1,26 @@
+CONTRASEÑA=1234
+
+INSERT INTO usuarios (
+    nombre, 
+    primer_apellido, 
+    segundo_apellido, 
+    correo, 
+    password, 
+    id_rol, 
+    estado_cuenta
+) VALUES (
+    'Administrador', 
+    'General', 
+    'Remude', 
+    'remude@bacalar.gob.mx',
+    '$2b$10$OvC1ZDOnqQRFDSU9nGcTpO6W4aPMIBsWkNvt6IW.Q4ekfUJ6xdUru',
+    3, 
+    true
+) RETURNING id_usuario;
+
+INSERT INTO administrativos (id_usuario, cargo) 
+VALUES (ID, 'Director de Deportes');
+
+INSERT INTO administrativos (id_usuario) VALUES (ID);
+
+INSERT INTO administrativos (id_usuario, nivel_permisos) VALUES (ID, 3);
