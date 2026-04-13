@@ -83,7 +83,6 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
             usuario: {
               nombre: `${data.entrenador?.nombre || usuarioAutenticado?.nombre || ''} ${data.entrenador?.apellidos || usuarioAutenticado?.apellidos || ''}`,
               ubicacion: "Bacalar, Quintana Roo",
-              disciplina: data.entrenador?.especialidad || "Disciplina no asignada"
             },
             notificaciones: data.notificaciones || [],
             atletas: hayAtletasBD ? data.atletas : { 
@@ -200,7 +199,7 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
                 {vistaPanel === 'perfilAtleta' && 'Ficha técnica'}
               </h2>
               <p className="text-xs md:text-sm font-medium text-gray-500 mt-1">
-                {vistaPanel === 'resumen' && `${datosDashboard.usuario.ubicacion} • ${datosDashboard.usuario.disciplina}`}
+                {vistaPanel === 'resumen' && `${datosDashboard.usuario.ubicacion}`}
                 {vistaPanel === 'delegacion' && 'Gestión y seguimiento de expedientes deportivos'}
                 {vistaPanel === 'inscripcion' && 'Completa los datos estructurados para el padrón municipal'}
                 {vistaPanel === 'perfil' && 'Ajustes y preferencias de tu cuenta'}
@@ -254,15 +253,6 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
                   <h3 className="text-2xl font-black text-gray-900 uppercase tracking-widest">
                     ESTADO DE LOS EXPEDIENTES
                   </h3>
-                  
-                  <div className="inline-flex items-center bg-white px-4 py-2.5 rounded-xl shadow-sm border border-gray-100">
-                    <Info className="w-4 h-4 text-[#c2a649] mr-3" />
-                    <span className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center">
-                      <Edit className="w-3.5 h-3.5 text-gray-400 mx-1.5" /> Ficha Técnica
-                      <span className="mx-3 text-gray-300">|</span>
-                      <FileText className="w-3.5 h-3.5 text-gray-400 mx-1.5" /> Expediente
-                    </span>
-                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
