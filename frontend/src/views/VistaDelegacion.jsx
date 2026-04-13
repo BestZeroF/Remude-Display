@@ -121,8 +121,11 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
           procesados.map(a => {
             const estatusReal = a.estatus || a.nombre_estatus || 'Pendiente';
             const nombreMostrar = a.nombre_completo || a.nombre || 'Sin nombre';
+            // NUEVO: Aseguramos tener el ID correcto
+            const idSeguro = a.id_atleta || a.id_usuario || a.id;
+            
             return (
-              <div key={a.id_atleta || a.id} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group" onClick={() => cambiarVistaPanel('perfilAtleta')}>
+              <div key={idSeguro} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex items-center gap-6 cursor-pointer hover:shadow-md transition-all group" onClick={() => cambiarVistaPanel('perfilAtleta', idSeguro)}>
                 <div className="w-14 h-14 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-xl shadow-inner shrink-0">
                   {nombreMostrar[0]?.toUpperCase()}
                 </div>
@@ -138,8 +141,12 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
                   {estatusReal}
                 </div>
                 <div className="flex gap-3">
-                  <ProgressBtn label="Ficha" pct={a.progreso_ficha || 0} color="[#7a2031]" Icon={Edit} />
-                  <ProgressBtn label="Docs" pct={a.progreso_docs || 0} color="[#c2a649]" Icon={FileText} />
+                  <div onClick={(e) => { e.stopPropagation(); cambiarVistaPanel('perfilAtleta', idSeguro, 'editar'); }}>
+                    <ProgressBtn label="Ficha" pct={a.progreso_ficha || 0} color="[#7a2031]" Icon={Edit} />
+                  </div>
+                  <div onClick={(e) => { e.stopPropagation(); cambiarVistaPanel('perfilAtleta', idSeguro, 'docs'); }}>
+                    <ProgressBtn label="Docs" pct={a.progreso_docs || 0} color="[#c2a649]" Icon={FileText} />
+                  </div>
                   <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#7a2031]" />
                 </div>
               </div>
