@@ -31,7 +31,6 @@ const getID = (catalogo, valorStr) => {
   return mapCatalogo[catalogo][valorStr.toUpperCase()] || null;
 };
 
-// Se eliminó 'cambiarVistaPanel' de las propiedades para limpiar la advertencia de ESLint
 export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNavegacion, cancelarNavegacion, solicitarNavegacion }) {
   const [pasoActual, setPasoActual] = useState(1);
   const totalPasos = 5;
@@ -47,7 +46,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   const camposLlenos = Object.values(datosFormulario).filter(valor => typeof valor === 'string' && valor.trim() !== '').length;
   const porcentajeProgreso = (camposLlenos / totalCampos) * 100;
 
-  // LÓGICA DE NAVEGACIÓN CORREGIDA: Si está en el Paso 1, sale sin preguntar.
   useEffect(() => {
     if (intentoNavegacion && pasoActual === 1) {
       if (intentoNavegacion === 'inscripcion') {
@@ -103,9 +101,11 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
 
       if (respuesta.ok) {
         if (data.existe) {
+          // LÓGICA CORREGIDA: Identifica si la CURP es de Atleta o Entrenador
           setAtletaExistente({
-            nombre: data.atleta?.nombre || 'Nombre Desconocido',
-            entrenadorActual: data.atleta?.entrenador || 'Entrenador Desconocido'
+            tipo: data.tipo || 'atleta',
+            nombre: data.datos?.nombre || data.atleta?.nombre || 'Nombre Desconocido',
+            entrenadorActual: data.datos?.entrenador || data.atleta?.entrenador || 'Entrenador Desconocido'
           });
         } else {
           setPasoActual(2);
@@ -250,7 +250,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
   return (
     <div className="max-w-4xl mx-auto w-full animate-fade-in pb-10 relative">
       
-      {/* MODAL DE NAVEGACIÓN INSEGURA - AHORA SOLO EN PASO 2 EN ADELANTE */}
       {intentoNavegacion && pasoActual > 1 && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full">
@@ -364,22 +363,32 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
                     <AlertTriangle className="w-6 h-6 text-red-500 mr-3 shrink-0 mt-1" />
                     <div>
                       <h4 className="font-bold text-red-900 mb-1">¡Esta CURP ya está registrada en el padrón!</h4>
-                      <p className="text-sm text-red-800 mb-4">
-                        El atleta <strong>{atletaExistente.nombre}</strong> se encuentra actualmente bajo la delegación del entrenador(a) <strong>{atletaExistente.entrenadorActual}</strong>.
-                      </p>
+                      
+                      {/* LÓGICA CORREGIDA: Mensaje específico para Entrenadores vs Atletas */}
+                      {atletaExistente.tipo === 'entrenador' ? (
+                        <p className="text-sm text-red-800 mb-4">
+                          Esta CURP le pertenece al entrenador(a) <strong>{atletaExistente.nombre}</strong>. No puedes registrar a un entrenador como atleta con la misma CURP.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-red-800 mb-4">
+                          El atleta <strong>{atletaExistente.nombre}</strong> se encuentra actualmente bajo la delegación del entrenador(a) <strong>{atletaExistente.entrenadorActual}</strong>.
+                        </p>
+                      )}
                       
                       <div className="flex flex-col sm:flex-row gap-3">
-                        <button 
-                          onClick={() => alert("Función para solicitar reasignación en construcción...")}
-                          className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl shadow-sm hover:bg-red-700 transition-colors"
-                        >
-                          Solicitar cambio de entrenador
-                        </button>
+                        {atletaExistente.tipo === 'atleta' && (
+                          <button 
+                            onClick={() => alert("Función para solicitar reasignación en construcción...")}
+                            className="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded-xl shadow-sm hover:bg-red-700 transition-colors"
+                          >
+                            Solicitar cambio de entrenador
+                          </button>
+                        )}
                         <button 
                           onClick={() => { setAtletaExistente(null); setDatosFormulario({...datosFormulario, curp: ''}); }}
                           className="px-4 py-2 bg-white text-red-600 text-sm font-bold rounded-xl border border-red-200 hover:bg-red-50 transition-colors"
                         >
-                          Registrar otro atleta
+                          Ingresar otra CURP
                         </button>
                       </div>
                     </div>
