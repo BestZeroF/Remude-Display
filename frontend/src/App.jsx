@@ -5,6 +5,7 @@ import VistaLogin from './views/VistaLogin';
 import VistaRegistro from './views/VistaRegistro';
 import VistaAcercaDe from './views/VistaAcercaDe';
 import PanelEntrenador from './views/PanelEntrenador';
+import PanelAdmin from './views/PanelAdmin';
 import FooterPublico from './components/FooterPublico';
 import logoRojo from './assets/logo-rojo-remude.png';
 
@@ -16,6 +17,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 via-white to-gray-100 font-sans text-gray-900 selection:bg-[#7a2031] selection:text-white relative overflow-x-hidden">
       
+      {/* Vistas Públicas */}
       {['inicio', 'login', 'registro', 'acercaDe'].includes(vistaActual) && (
         <div className="min-h-screen flex flex-col relative">
           <header className="w-full pt-6 pb-2 px-8 md:px-16 flex justify-between items-center z-10">
@@ -37,8 +39,14 @@ export default function App() {
         </div>
       )}
 
+      {/* Vistas Privadas (Requieren Sesión) */}
       {vistaActual === 'panelEntrenador' && (
         <PanelEntrenador cambiarVista={setVistaActual} usuarioAutenticado={usuarioAutenticado} />
+      )}
+      
+      {/* === NUEVA RUTA PARA EL ADMIN === */}
+      {vistaActual === 'panelAdmin' && (
+        <PanelAdmin cambiarVista={setVistaActual} usuarioAutenticado={usuarioAutenticado} />
       )}
       
     </div>

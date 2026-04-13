@@ -34,15 +34,28 @@ export default function VistaLogin({ cambiarVista, setUsuario }) {
       const data = await respuesta.json();
 
       if (respuesta.ok) {
+        // Guardamos el token
         localStorage.setItem('token_remude', data.token);
         
+        // Guardamos la sesión global
         setUsuario({
           ...data.usuario,
           id_usuario: data.id_usuario,
           id_rol: data.id_rol
         }); 
         
-        cambiarVista('panelEntrenador');
+        // === LA MAGIA DEL ROL SUCEDE AQUÍ ===
+        // Redirigimos dependiendo del id_rol que envía el backend
+        if (data.id_rol === 1) {
+          cambiarVista('perfilAtleta'); // Asumiendo que esta es tu vista de atleta
+        } else if (data.id_rol === 2) {
+          cambiarVista('panelEntrenador');
+        } else if (data.id_rol === 3) {
+          cambiarVista('panelAdmin');
+        } else {
+          setErrores({ general: 'Rol no reconocido.' });
+        }
+        
       } else {
         setErrores({ general: data.message || 'Error al iniciar sesión' });
       }
