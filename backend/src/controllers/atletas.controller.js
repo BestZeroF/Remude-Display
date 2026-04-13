@@ -29,66 +29,67 @@ const verificarPermisosAtleta = async (id_atleta_param, id_usuario_token, id_rol
 };
 
 // ==========================================
-// NUEVO V6: GET /api/atletas/validar-curp/:curp
+// VALIDAR CURP (Detecta si es Atleta o Entrenador)
 // ==========================================
 atletasController.validarCURP = async (req, res) => {
     try {
         const { curp } = req.params;
-        
-        // 1. Buscar en la tabla de atletas con JOIN para obtener nombre y entrenador
-        const queryAtletas = `
-            SELECT 
-                a.curp, 
-                CONCAT(u.nombre, ' ', u.primer_apellido, ' ', COALESCE(u.segundo_apellido, '')) AS nombre_completo,
-                CONCAT(ue.nombre, ' ', ue.primer_apellido, ' ', COALESCE(ue.segundo_apellido, '')) AS entrenador_actual
-            FROM atletas a
-            INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
-            LEFT JOIN entrenadores e ON a.id_entrenador = e.id_entrenador
-            LEFT JOIN usuarios ue ON e.id_usuario = ue.id_usuario
-            WHERE a.curp = $1
-        `;
-        const { rows: rowsAtletas } = await db.query(queryAtletas, [curp]);
-        
-        if (rowsAtletas.length > 0) {
-            const atleta = rowsAtletas[0];
-            return res.json({ 
-                existe: true,
-                tipo: 'atleta',
-                nombre: atleta.nombre_completo.trim().replace(/\s+/g, ' '),
-                entrenadorActual: atleta.entrenador_actual ? atleta.entrenador_actual.trim().replace(/\s+/g, ' ') : 'Sin entrenador asignado'
-            });
-        }
 
-        // 2. Buscar en la tabla de entrenadores con JOIN para obtener su nombre
-        const queryEntrenadores = `
-            SELECT 
-                e.curp,
-                CONCAT(u.nombre, ' ', u.primer_apellido, ' ', COALESCE(u.segundo_apellido, '')) AS nombre_completo
+        // 1. Buscar si la CURP pertenece a un ENTRENADOR
+        const queryEntrenador = `
+            SELECT u.nombre, u.primer_apellido, u.segundo_apellido
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
             WHERE e.curp = $1
         `;
-        const { rows: rowsEntrenadores } = await db.query(queryEntrenadores, [curp]);
+        const resEntrenador = await db.query(queryEntrenador, [curp]);
 
-        if (rowsEntrenadores.length > 0) {
-            const entrenador = rowsEntrenadores[0];
-            return res.json({ 
+        if (resEntrenador.rows.length > 0) {
+            const ent = resEntrenador.rows[0];
+            return res.json({
                 existe: true,
                 tipo: 'entrenador',
-                nombre: entrenador.nombre_completo.trim().replace(/\s+/g, ' ')
+                nombre: `${ent.nombre} ${ent.primer_apellido} ${ent.segundo_apellido || ''}`.trim()
             });
         }
 
-        // Si no existe en ningún lado
+        // 2. Buscar si la CURP pertenece a un ATLETA
+        const queryAtleta = `
+            SELECT 
+                u.nombre, u.primer_apellido, u.segundo_apellido,
+                eu.nombre AS ent_nombre, eu.primer_apellido AS ent_apellido, eu.segundo_apellido AS ent_segundo
+            FROM atletas a
+            INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
+            LEFT JOIN entrenadores e ON a.id_entrenador = e.id_entrenador
+            LEFT JOIN usuarios eu ON e.id_usuario = eu.id_usuario
+            WHERE a.curp = $1
+        `;
+        const resAtleta = await db.query(queryAtleta, [curp]);
+
+        if (resAtleta.rows.length > 0) {
+            const atl = resAtleta.rows[0];
+            const entrenadorActual = atl.ent_nombre 
+                ? `${atl.ent_nombre} ${atl.ent_apellido} ${atl.ent_segundo || ''}`.trim()
+                : 'Sin entrenador asignado';
+
+            return res.json({
+                existe: true,
+                tipo: 'atleta',
+                nombre: `${atl.nombre} ${atl.primer_apellido} ${atl.segundo_apellido || ''}`.trim(),
+                entrenadorActual: entrenadorActual
+            });
+        }
+
+        // Si no se encuentra en ninguna de las dos tablas, la CURP está libre
         return res.json({ existe: false });
-        
+
     } catch (error) {
         console.error('Error al validar CURP:', error);
-        res.status(500).json({ message: 'Error interno del servidor al validar la CURP.' });
+        res.status(500).json({ message: 'Error interno del servidor al validar CURP.' });
     }
 };
 
-// GET /api/atletas/:id (Perfil completo con JOINs a todas las tablas ajustadas a id_usuario)
+// GET /api/atletas/:id (Perfil completo)
 atletasController.obtenerAtletaPorId = async (req, res) => {
     try {
         const { id } = req.params;
