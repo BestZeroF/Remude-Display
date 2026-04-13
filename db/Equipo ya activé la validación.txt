@@ -1,0 +1,46 @@
+Equipo, ya activé la validación estricta de CURP en el Frontend. Si el endpoint falla, el entrenador no podrá inscribir al atleta. Por favor asegúrense de:
+
+Que el endpoint GET /api/atletas/validar-curp/:curp esté funcionando.
+
+Muy importante: Que esta validación revise la CURP incluso si el atleta está como 'Avance' (es decir, que ya tiene registro en usuarios pero quizá aún no tiene todos los datos médicos/domicilio).
+
+En el registro de entrenadores POST /api/auth/registro/entrenador, el backend debe validar que la CURP no exista ya en la tabla de usuarios o entrenadores antes de intentar hacer el INSERT.
+
+¿Por qué falló la validación de la CURP?
+
+Si revisas el PDF (Documentación API remude-2.pdf) que te enviaron tus compañeros, ellos no documentaron ni crearon ningún endpoint para validar la CURP (como GET /api/atletas/validar-curp/:curp).
+Como tú me pediste en la iteración pasada que la validación fuera estricta (es decir, no dejarte pasar si no se validaba), el Frontend intentó conectarse a esa ruta, el Backend le respondió "No existo (Error 404)", y el Frontend te bloqueó con el mensaje rojo. ¡El sistema hizo exactamente lo que debía hacer para proteger la base de datos!
+
+Los atletas con inscripción "a medias" (avances guardados) deberían aparecer en la tarjeta de "Pendientes" para que el entrenador no se olvide de ellos.
+
+Para que esto sea posible, revisé el archivo .sql de tu equipo y noté que su tabla catalogo_estatus solo tiene dos opciones: 1 (Activo) y 2 (Inactivo). No tienen estatus para "Pendiente", "En revisión" o "Rechazado".
+
+Equipo, intentamos hacer la integración final pero el Frontend nos está rebotando por dos cosas que nos faltan en el Backend y la BD:
+
+Endpoint Faltante (Bloqueante): Necesitamos con urgencia el endpoint GET /api/atletas/validar-curp/:curp. Este endpoint debe devolver { "existe": true/false } revisando si la CURP ya está en uso. Sin esto, el frontend no dejará a los entrenadores iniciar el registro de atletas para evitar duplicados.
+
+Cambio en BD (Estatus de Atletas): Para el Dashboard, vamos a separar a los atletas en: Pendientes, En Revisión, Validados y Rechazados. Actualmente el catalogo_estatus solo tiene 'Activo' e 'Inactivo'. Necesitamos que actualicen ese catálogo con los nuevos estatus.
+
+Lógica de Avances (Pendientes): Cuando yo mande un POST a /api/auth/registro/atleta para guardar un avance, el backend debe asignarle por defecto el id_estatus de 'Pendiente' (o 'Incompleto').
+
+*dudaaaa*
+¿esto de qué es? ¿qué está creando?
+
+WITH nueva_atleta AS (
+    INSERT INTO usuarios (id_rol, nombre, primer_apellido, correo, password, estado_cuenta) 
+    VALUES (
+        1, 
+        'Victoria',
+        'Piña Poot',
+        'victoria.pina@ejemplo.com',
+        '$2a$10$.OTd58sbeKkv4nNteUdUeeSXYRoFP/RJxWvK8BBu/Aa1NNrIURr7u',
+        true
+    )
+    RETURNING id_usuario
+)
+INSERT INTO atletas (id_usuario, id_estatus, curp)
+SELECT 
+    id_usuario, 
+    1,
+    'PIPV050202MQREXX02'
+FROM nueva_atleta;
