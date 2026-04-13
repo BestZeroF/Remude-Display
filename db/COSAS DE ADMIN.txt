@@ -1,5 +1,7 @@
 CONTRASEÑA=1234
 
+EL ID ES QUE CAMBIAS SEGUN LO QUE TE GENERE AL CREAR
+
 INSERT INTO usuarios (
     nombre, 
     primer_apellido, 
