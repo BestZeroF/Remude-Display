@@ -2,7 +2,58 @@ const db = require('../config/db');
 
 const adminController = {};
 
+// ==========================================
+// [NUEVO] GET /api/admin/dashboard
+// Para alimentar los KPIs y la tabla rápida de la vista principal
+// ==========================================
+adminController.getDashboardData = async (req, res) => {
+    try {
+        // 1. Totales principales
+        const resAtletas = await db.query('SELECT COUNT(*) FROM atletas');
+        const resEntrenadores = await db.query('SELECT COUNT(*) FROM entrenadores');
+        
+        // Basado en Regla de Oro #4: 2 = En Revisión, 4 = Rechazado
+        const resRevision = await db.query('SELECT COUNT(*) FROM atletas WHERE id_estatus = 2');
+        const resRechazados = await db.query('SELECT COUNT(*) FROM atletas WHERE id_estatus = 4');
+
+        // 2. Obtener los últimos registros (Actividad Reciente)
+        // Usamos una versión simplificada de tu query de usuarios para el dashboard
+        const queryRecientes = `
+            SELECT 
+                a.id_atleta as id, 
+                u.nombre || ' ' || u.primer_apellido as nombre, 
+                a.curp, 
+                'General' as disciplina, 
+                ce.nombre_estatus as estatus,
+                ue.nombre as entrenador
+            FROM atletas a
+            INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
+            INNER JOIN catalogo_estatus ce ON a.id_estatus = ce.id_estatus
+            LEFT JOIN entrenadores ent_asignado ON a.id_entrenador = ent_asignado.id_entrenador
+            LEFT JOIN usuarios ue ON ent_asignado.id_usuario = ue.id_usuario
+            ORDER BY a.id_atleta DESC
+            LIMIT 5;
+        `;
+        const { rows: recientes } = await db.query(queryRecientes);
+
+        res.json({
+            totales: {
+                atletas: parseInt(resAtletas.rows[0].count),
+                entrenadores: parseInt(resEntrenadores.rows[0].count),
+                enRevision: parseInt(resRevision.rows[0].count),
+                rechazados: parseInt(resRechazados.rows[0].count)
+            },
+            recientes
+        });
+    } catch (error) {
+        console.error('Error en dashboard admin:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+};
+
+// ==========================================
 // GET /api/admin/usuarios -> Ver absolutamente a todos
+// ==========================================
 adminController.obtenerTodosLosUsuarios = async (req, res) => {
     try {
         const query = `
@@ -36,7 +87,9 @@ adminController.obtenerTodosLosUsuarios = async (req, res) => {
     }
 };
 
+// ==========================================
 // PUT /api/admin/atletas/:id_atleta/reasignar
+// ==========================================
 adminController.reasignarAtleta = async (req, res) => {
     try {
         const { id_atleta } = req.params;
@@ -60,7 +113,7 @@ adminController.reasignarAtleta = async (req, res) => {
 
         res.json({ message: 'Atleta reasignado exitosamente.', data: rows[0] });
     } catch (error) {
-        if (error.code === '23503') { // Llave foránea (El entrenador no existe)
+        if (error.code === '23503') {
             return res.status(400).json({ message: 'El entrenador asignado no existe.' });
         }
         console.error('Error al reasignar:', error);
@@ -68,11 +121,13 @@ adminController.reasignarAtleta = async (req, res) => {
     }
 };
 
-// PUT /api/admin/dictamen/:id_usuario -> Cambiar id_estatus (Ej. 1: Activo, 2: Inactivo, 3: En Corrección)
+// ==========================================
+// PUT /api/admin/dictamen/:id_usuario
+// ==========================================
 adminController.dictaminarPerfil = async (req, res) => {
     try {
         const { id_usuario } = req.params;
-        const { id_estatus } = req.body; // Ahora requiere un id_estatus numérico
+        const { id_estatus } = req.body; 
 
         if (!id_estatus || isNaN(id_estatus)) {
             return res.status(400).json({ message: 'Se requiere un id_estatus válido (numérico).' });
@@ -90,7 +145,7 @@ adminController.dictaminarPerfil = async (req, res) => {
             return res.status(404).json({ message: 'Atleta no encontrado.' });
         }
 
-        res.json({ message: `Estatus del perfil actualizado correctamente a la opción ID: ${id_estatus}`, data: rows[0] });
+        res.json({ message: `Estatus del perfil actualizado correctamente`, data: rows[0] });
     } catch (error) {
         console.error('Error al dictaminar:', error);
         if (error.code === '23503') return res.status(400).json({ message: 'El estatus proporcionado no existe en el catálogo.' });
@@ -98,12 +153,13 @@ adminController.dictaminarPerfil = async (req, res) => {
     }
 };
 
-// DELETE /api/admin/usuarios/:id_usuario -> Baja lógica de cualquier usuario
+// ==========================================
+// DELETE /api/admin/usuarios/:id_usuario
+// ==========================================
 adminController.eliminarUsuario = async (req, res) => {
     try {
         const { id_usuario } = req.params;
 
-        // Desactivamos la cuenta a nivel global para que no pueda loguearse
         const query = `
             UPDATE usuarios 
             SET estado_cuenta = false 
@@ -116,7 +172,7 @@ adminController.eliminarUsuario = async (req, res) => {
             return res.status(404).json({ message: 'Usuario no encontrado.' });
         }
 
-        // Adicionalmente, si es atleta, lo marcamos inactivo (id_estatus = 2)
+        // Si es atleta, lo marcamos inactivo (id_estatus = 2 o el que corresponda a Inactivo en tu BD)
         await db.query(`UPDATE atletas SET id_estatus = 2 WHERE id_usuario = $1`, [id_usuario]);
 
         res.json({ message: 'Usuario dado de baja exitosamente (Soft Delete).', data: rows[0] });

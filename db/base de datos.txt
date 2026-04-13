@@ -1,0 +1,205 @@
+CREATE TABLE public.catalogo_roles (
+    id_rol SERIAL PRIMARY KEY,
+    nombre_rol VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE public.catalogo_estatus (
+    id_estatus SERIAL PRIMARY KEY,
+    nombre_estatus VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE public.catalogo_sexo (
+    id_sexo SERIAL PRIMARY KEY,
+    nombre_sexo VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE public.catalogo_genero (
+    id_genero SERIAL PRIMARY KEY,
+    nombre_genero VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE public.catalogo_estadocivil (
+    id_estadocivil SERIAL PRIMARY KEY,
+    nombre_estado VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE public.catalogo_tiposangre (
+    id_tiposangre SERIAL PRIMARY KEY,
+    grupo_sanguineo VARCHAR(10) NOT NULL
+);
+
+CREATE TABLE public.catalogo_tallas (
+    id_talla SERIAL PRIMARY KEY,
+    nomenclatura VARCHAR(10) NOT NULL
+);
+
+CREATE TABLE public.catalogo_categorias (
+    id_categoria SERIAL PRIMARY KEY,
+    nombre_categoria VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE public.catalogo_nivelestudios (
+    id_nivel SERIAL PRIMARY KEY,
+    nombre_nivel VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE public.catalogo_tiposdocumento (
+    id_tipodoc SERIAL PRIMARY KEY,
+    nombre_tipo VARCHAR(30) NOT NULL
+);
+
+CREATE TABLE public.catalogo_tiponotificacion (
+    id_tiponotif SERIAL PRIMARY KEY,
+    nombre_tipo VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE public.disciplinas (
+    id_disciplina SERIAL PRIMARY KEY,
+    nombre_disciplina VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE public.usuarios (
+    id_usuario SERIAL PRIMARY KEY,
+    id_rol INTEGER REFERENCES public.catalogo_roles(id_rol),
+    nombre VARCHAR(100) NOT NULL,
+    primer_apellido VARCHAR(100) NOT NULL,
+    segundo_apellido VARCHAR(100),
+    correo VARCHAR(100) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    estado_cuenta BOOLEAN DEFAULT true
+);
+
+CREATE TABLE public.administrativos (
+    id_admin SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    nivel_permisos INTEGER DEFAULT 1
+);
+
+CREATE TABLE public.entrenadores (
+    id_entrenador SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    titulo_logro VARCHAR(150),
+    fecha_logro DATE,
+    descripcion TEXT,
+    especialidad VARCHAR(100),
+    curp VARCHAR(18) UNIQUE
+);
+
+CREATE TABLE public.atletas (
+    id_atleta SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_entrenador INTEGER REFERENCES public.entrenadores(id_entrenador) ON DELETE SET NULL,
+    id_estatus INTEGER REFERENCES public.catalogo_estatus(id_estatus),
+    curp VARCHAR(18) UNIQUE NOT NULL,
+    fecha_nacimiento DATE,
+    estado_validacion VARCHAR(20) DEFAULT 'BORRADOR'
+);
+
+CREATE TABLE public.perfiles_personales (
+    id_perfil SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_sexo INTEGER REFERENCES public.catalogo_sexo(id_sexo),
+    id_genero INTEGER REFERENCES public.catalogo_genero(id_genero),
+    id_estadocivil INTEGER REFERENCES public.catalogo_estadocivil(id_estadocivil),
+    rfc VARCHAR(13),
+    nss VARCHAR(20),
+    clave_ine VARCHAR(25),
+    lugar_nacimiento VARCHAR(150)
+);
+
+CREATE TABLE public.domicilios (
+    id_domicilio SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    celular VARCHAR(20),
+    telefono_fijo VARCHAR(20),
+    codigo_postal VARCHAR(10),
+    colonia VARCHAR(150),
+    direccion_calle VARCHAR(150),
+    cruzamientos VARCHAR(150),
+    num_exterior VARCHAR(20),
+    num_interior VARCHAR(20),
+    manzana VARCHAR(20),
+    lote VARCHAR(20)
+);
+
+CREATE TABLE public.perfiles_medicos (
+    id_perfil_medico SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_tiposangre INTEGER REFERENCES public.catalogo_tiposangre(id_tiposangre),
+    peso_kg NUMERIC(5,2),
+    estatura_mts NUMERIC(4,2),
+    alergias_condiciones TEXT
+);
+
+CREATE TABLE public.detalles_atletas (
+    id_detalle SERIAL PRIMARY KEY,
+    id_usuario INTEGER UNIQUE REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_categoria INTEGER REFERENCES public.catalogo_categorias(id_categoria),
+    id_talla_camisa INTEGER REFERENCES public.catalogo_tallas(id_talla),
+    id_talla_pantalon INTEGER REFERENCES public.catalogo_tallas(id_talla),
+    id_talla_short INTEGER REFERENCES public.catalogo_tallas(id_talla),
+    id_talla_chamarra INTEGER REFERENCES public.catalogo_tallas(id_talla),
+    talla_calzado NUMERIC(4,1),
+    id_nivel_estudios INTEGER REFERENCES public.catalogo_nivelestudios(id_nivel),
+    institucion_escolar VARCHAR(200)
+);
+
+CREATE TABLE public.documentos (
+    id_documento SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_tipodoc INTEGER REFERENCES public.catalogo_tiposdocumento(id_tipodoc),
+    id_estatus INTEGER REFERENCES public.catalogo_estatus(id_estatus),
+    ruta_archivo VARCHAR(255) NOT NULL,
+    motivo_rechazo TEXT,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_vencimiento DATE
+);
+
+CREATE TABLE public.atleta_disciplina (
+    id_atleta INTEGER REFERENCES public.atletas(id_atleta) ON DELETE CASCADE,
+    id_disciplina INTEGER REFERENCES public.disciplinas(id_disciplina) ON DELETE CASCADE,
+    PRIMARY KEY (id_atleta, id_disciplina)
+);
+
+CREATE TABLE public.eventos (
+    id_evento SERIAL PRIMARY KEY,
+    id_admin INTEGER REFERENCES public.administrativos(id_admin),
+    nombre_evento VARCHAR(150) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE,
+    descripcion TEXT
+);
+
+CREATE TABLE public.notificaciones (
+    id_notificaciones SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_tiponotif INTEGER REFERENCES public.catalogo_tiponotificacion(id_tiponotif),
+    titulo VARCHAR(100) NOT NULL,
+    mensaje TEXT NOT NULL,
+    leido BOOLEAN DEFAULT false,
+    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE public.espacios_deportivos (
+    id_espacio SERIAL PRIMARY KEY,
+    id_estatus INTEGER REFERENCES public.catalogo_estatus(id_estatus),
+    nombre_espacio VARCHAR(150) NOT NULL,
+    ubicacion VARCHAR(250)
+);
+
+CREATE TABLE public.historial_deportivo (
+    id_historial SERIAL PRIMARY KEY,
+    id_atleta INTEGER REFERENCES public.atletas(id_atleta) ON DELETE CASCADE,
+    descripcion TEXT,
+    fecha_evento DATE
+);
+
+CREATE TABLE public.solicitudes_reasignacion (
+    id_solicitud SERIAL PRIMARY KEY,
+    id_usuario INTEGER REFERENCES public.usuarios(id_usuario) ON DELETE CASCADE,
+    id_atleta INTEGER REFERENCES public.atletas(id_atleta) ON DELETE CASCADE,
+    id_entrenador INTEGER REFERENCES public.entrenadores(id_entrenador) ON DELETE CASCADE,
+    id_estatus INTEGER REFERENCES public.catalogo_estatus(id_estatus),
+    motivo TEXT,
+    fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
