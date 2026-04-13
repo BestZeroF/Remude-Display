@@ -28,7 +28,68 @@ const verificarPermisosAtleta = async (id_atleta_param, id_usuario_token, id_rol
     return { error: 'Acceso denegado. No tienes permisos sobre este atleta.', status: 403 };
 };
 
-// GET /api/atletas/:id (Perfil completo con JOINs a todas las tablas ajustadas a id_usuario)
+// ==========================================
+// VALIDAR CURP (Detecta si es Atleta o Entrenador)
+// ==========================================
+atletasController.validarCURP = async (req, res) => {
+    try {
+        const { curp } = req.params;
+
+        // 1. Buscar si la CURP pertenece a un ENTRENADOR
+        const queryEntrenador = `
+            SELECT u.nombre, u.primer_apellido, u.segundo_apellido
+            FROM entrenadores e
+            INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
+            WHERE e.curp = $1
+        `;
+        const resEntrenador = await db.query(queryEntrenador, [curp]);
+
+        if (resEntrenador.rows.length > 0) {
+            const ent = resEntrenador.rows[0];
+            return res.json({
+                existe: true,
+                tipo: 'entrenador',
+                nombre: `${ent.nombre} ${ent.primer_apellido} ${ent.segundo_apellido || ''}`.trim()
+            });
+        }
+
+        // 2. Buscar si la CURP pertenece a un ATLETA
+        const queryAtleta = `
+            SELECT 
+                u.nombre, u.primer_apellido, u.segundo_apellido,
+                eu.nombre AS ent_nombre, eu.primer_apellido AS ent_apellido, eu.segundo_apellido AS ent_segundo
+            FROM atletas a
+            INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
+            LEFT JOIN entrenadores e ON a.id_entrenador = e.id_entrenador
+            LEFT JOIN usuarios eu ON e.id_usuario = eu.id_usuario
+            WHERE a.curp = $1
+        `;
+        const resAtleta = await db.query(queryAtleta, [curp]);
+
+        if (resAtleta.rows.length > 0) {
+            const atl = resAtleta.rows[0];
+            const entrenadorActual = atl.ent_nombre 
+                ? `${atl.ent_nombre} ${atl.ent_apellido} ${atl.ent_segundo || ''}`.trim()
+                : 'Sin entrenador asignado';
+
+            return res.json({
+                existe: true,
+                tipo: 'atleta',
+                nombre: `${atl.nombre} ${atl.primer_apellido} ${atl.segundo_apellido || ''}`.trim(),
+                entrenadorActual: entrenadorActual
+            });
+        }
+
+        // Si no se encuentra en ninguna de las dos tablas, la CURP está libre
+        return res.json({ existe: false });
+
+    } catch (error) {
+        console.error('Error al validar CURP:', error);
+        res.status(500).json({ message: 'Error interno del servidor al validar CURP.' });
+    }
+};
+
+// GET /api/atletas/:id (Perfil completo)
 atletasController.obtenerAtletaPorId = async (req, res) => {
     try {
         const { id } = req.params;

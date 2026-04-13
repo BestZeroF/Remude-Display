@@ -31,7 +31,7 @@ const getID = (catalogo, valorStr) => {
   return mapCatalogo[catalogo][valorStr.toUpperCase()] || null;
 };
 
-export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNavegacion, cancelarNavegacion, solicitarNavegacion }) {
+export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNavegacion, cancelarNavegacion, solicitarNavegacion, usuarioAutenticado }) {
   const [pasoActual, setPasoActual] = useState(1);
   const totalPasos = 5;
   const [cargando, setCargando] = useState(false);
@@ -78,14 +78,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
 
     const token = localStorage.getItem('token_remude');
 
-    if (token === 'MODO_PRUEBA') {
-      setTimeout(() => {
-        setPasoActual(2);
-        setCargando(false);
-      }, 500);
-      return;
-    }
-
     try {
       const URL_VALIDAR_CURP = `http://localhost:3000/api/atletas/validar-curp/${datosFormulario.curp}`;
       const respuesta = await fetch(URL_VALIDAR_CURP, {
@@ -93,7 +85,7 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
       });
       
       if (respuesta.status === 404) {
-         setErrorValidacion('Error 404: El equipo de backend aún no ha creado el endpoint para validar la CURP.');
+         setErrorValidacion('Error 404: La ruta para validar CURP no se encuentra en el backend. Revisa atletas.routes.js');
          return;
       }
 
@@ -101,11 +93,10 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
 
       if (respuesta.ok) {
         if (data.existe) {
-          // LÓGICA CORREGIDA: Identifica si la CURP es de Atleta o Entrenador
           setAtletaExistente({
             tipo: data.tipo || 'atleta',
-            nombre: data.datos?.nombre || data.atleta?.nombre || 'Nombre Desconocido',
-            entrenadorActual: data.datos?.entrenador || data.atleta?.entrenador || 'Entrenador Desconocido'
+            nombre: data.nombre || 'Nombre Desconocido',
+            entrenadorActual: data.entrenadorActual || 'Entrenador Desconocido'
           });
         } else {
           setPasoActual(2);
@@ -155,11 +146,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
       window.scrollTo({ top: 0, behavior: 'smooth' }); 
     };
 
-    if (token === 'MODO_PRUEBA') {
-      setTimeout(() => { procesarExito(); setCargando(false); }, 1000);
-      return;
-    }
-
     try {
       let currentUserId = datosFormulario.idUsuarioAtleta;
 
@@ -170,7 +156,8 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
           segundo_apellido: datosFormulario.segundoApellido || "",
           correo: datosFormulario.correo || `temp_${Date.now()}@remude.com`, 
           password: "Remude_password123!", 
-          curp: datosFormulario.curp
+          curp: datosFormulario.curp,
+          id_entrenador: usuarioAutenticado?.id_usuario
         };
 
         const resBase = await fetch('http://localhost:3000/api/auth/registro/atleta', { method: 'POST', headers, body: JSON.stringify(payloadBase) });
@@ -234,6 +221,10 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
             institucion_escolar: datosFormulario.institucion
           };
           await fetch(`http://localhost:3000/api/perfiles/${currentUserId}/detalles`, { method: 'PUT', headers, body: JSON.stringify(payloadDetalles) });
+        }
+
+        if (!esAvance) {
+          await fetch(`http://localhost:3000/api/perfiles/${currentUserId}/enviar-revision`, { method: 'PUT', headers });
         }
       }
 
@@ -364,7 +355,6 @@ export default function VistaInscripcionAtleta({ intentoNavegacion, confirmarNav
                     <div>
                       <h4 className="font-bold text-red-900 mb-1">¡Esta CURP ya está registrada en el padrón!</h4>
                       
-                      {/* LÓGICA CORREGIDA: Mensaje específico para Entrenadores vs Atletas */}
                       {atletaExistente.tipo === 'entrenador' ? (
                         <p className="text-sm text-red-800 mb-4">
                           Esta CURP le pertenece al entrenador(a) <strong>{atletaExistente.nombre}</strong>. No puedes registrar a un entrenador como atleta con la misma CURP.

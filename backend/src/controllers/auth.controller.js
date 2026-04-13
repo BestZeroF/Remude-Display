@@ -56,8 +56,30 @@ authController.login = async (req, res) => {
 // POST /api/auth/registro/atleta (Fase 1)
 // ==========================================
 authController.registrarAtletaDesdeCero = async (req, res) => {
-    // CORRECCIÓN V5: Se piden primer_apellido y segundo_apellido
     const { nombre, primer_apellido, segundo_apellido, correo, password, curp } = req.body;
+    let id_entrenador_asignado = req.body.id_entrenador || null;
+
+    // MAGIA BACKEND: Detectamos automáticamente al entrenador que tiene la sesión iniciada
+    const authHeader = req.header('Authorization');
+    if (authHeader) {
+        try {
+            const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+            const decoded = jwt.verify(token, JWT_SECRET);
+            
+            // Si el usuario autenticado tiene rol 2 (Entrenador)
+            if (decoded.id_rol === 2) {
+                // ¡CORRECCIÓN CRÍTICA!: Buscamos el id_entrenador real en la tabla entrenadores.
+                // Usar el id_usuario directamente causaba un Error 500 por violación de llave foránea.
+                const resEntrenador = await db.query('SELECT id_entrenador FROM entrenadores WHERE id_usuario = $1', [decoded.id_usuario]);
+                if (resEntrenador.rows.length > 0) {
+                    id_entrenador_asignado = resEntrenador.rows[0].id_entrenador;
+                }
+            }
+        } catch (error) {
+            // Ignoramos el error de token aquí para permitir que los atletas se registren a sí mismos públicamente sin token
+            console.log("Registro de atleta sin sesión de entrenador activa.");
+        }
+    }
 
     if (!nombre || !primer_apellido || !correo || !password || !curp) {
         return res.status(400).json({ message: 'Los campos marcados con asterisco son obligatorios.' });
@@ -81,11 +103,11 @@ authController.registrarAtletaDesdeCero = async (req, res) => {
 
         // 3. Insertar perfil base en la tabla atletas (Estatus 1 = Pendiente/Activo inicial)
         const queryAtleta = `
-            INSERT INTO atletas (id_usuario, curp, id_estatus)
-            VALUES ($1, $2, 1)
+            INSERT INTO atletas (id_usuario, curp, id_estatus, id_entrenador)
+            VALUES ($1, $2, 1, $3)
             RETURNING id_atleta;
         `;
-        await db.query(queryAtleta, [new_id_usuario, curp]);
+        await db.query(queryAtleta, [new_id_usuario, curp, id_entrenador_asignado]);
 
         await db.query('COMMIT'); // Guardar cambios en BD
 
@@ -100,16 +122,26 @@ authController.registrarAtletaDesdeCero = async (req, res) => {
             message: 'Cuenta creada exitosamente. Pasando a la Fase 2.',
             token,
             id_usuario: new_id_usuario,
-            id_rol: 1
+            id_rol: 1,
+            entrenador_asignado: id_entrenador_asignado // Para debug en el frontend
         });
 
     } catch (error) {
         await db.query('ROLLBACK'); // Deshacer cambios si algo falla
-        console.error('Error en registro de atleta:', error);
+        console.error('Error detallado en registro de atleta:', error.message, error.detail);
+        
+        // ¡NUEVO!: Respuestas de error ultra-específicas para saber qué falló en la BD
         if (error.code === '23505') {
             return res.status(409).json({ message: 'El correo o CURP ya se encuentra registrado en el sistema.' });
         }
-        res.status(500).json({ message: 'Error interno del servidor al crear la cuenta.' });
+        if (error.code === '23503') {
+            return res.status(400).json({ message: 'Error de integridad (Llave foránea). Asegúrate de que el id_entrenador existe en la BD.', detail: error.detail });
+        }
+        if (error.code === '42703') {
+            return res.status(500).json({ message: 'Error estructural: La columna id_entrenador no existe en tu tabla atletas. ¡Debes crearla en PostgreSQL!', detail: error.message });
+        }
+        
+        res.status(500).json({ message: 'Error interno del servidor al crear la cuenta. Revisa la consola del backend.', error: error.message });
     }
 };
 
