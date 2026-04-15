@@ -58,7 +58,7 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
 entrenadoresController.obtenerMisAtletas = async (req, res) => {
     try {
         const id_usuario_token = req.user.id_usuario;
-        const { buscar, estatus, disciplina } = req.query; // Extraer los filtros de la URL
+        const { buscar, estatus, disciplina } = req.query; 
 
         // 1. Obtener el id_entrenador asociado a la cuenta que hace la petición
         const queryEntrenador = 'SELECT id_entrenador FROM entrenadores WHERE id_usuario = $1';
@@ -69,9 +69,10 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
         }
         const id_entrenador = entrenadorRows[0].id_entrenador;
 
-        // 2. Construir la consulta dinámica
+        // 2. Construir la consulta dinámica (Añadido u.id_usuario)
         let query = `
             SELECT 
+                u.id_usuario,
                 a.id_atleta, 
                 CONCAT(u.nombre, ' ', u.primer_apellido, ' ', COALESCE(u.segundo_apellido, '')) AS nombre_completo, 
                 a.curp, 
@@ -97,7 +98,7 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
         `;
 
         const values = [id_entrenador];
-        let paramIndex = 2; // Inicia en 2 porque $1 ya es id_entrenador
+        let paramIndex = 2; 
 
         // 3. Aplicar Filtros (si existen)
         if (buscar) {
@@ -123,8 +124,9 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
         // 4. Ejecutar consulta
         const { rows } = await db.query(query, values);
         
-        // 5. Formatear resultados (limpiar espacios extra y asegurar que los % sean números)
+        // 5. Formatear resultados (Añadido id_usuario al mapeo)
         const resultadoFormateado = rows.map(row => ({
+            id_usuario: row.id_usuario,
             id_atleta: row.id_atleta,
             nombre_completo: row.nombre_completo.trim().replace(/\s+/g, ' '),
             curp: row.curp,
@@ -146,7 +148,7 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
 entrenadoresController.listarEntrenadores = async (req, res) => {
     try {
         const query = `
-            SELECT e.id_entrenador, e.especialidad, e.titulo_logro, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
+            SELECT e.id_entrenador, e.especialidad, e.titulo_logro, u.id_usuario, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
             ORDER BY u.primer_apellido ASC
@@ -165,7 +167,7 @@ entrenadoresController.obtenerEntrenadorPorId = async (req, res) => {
         const { id } = req.params;
         const query = `
             SELECT e.id_entrenador, e.titulo_logro, e.fecha_logro, e.descripcion, e.especialidad, e.curp,
-                   u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
+                   u.id_usuario, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
             WHERE e.id_entrenador = $1
@@ -253,10 +255,10 @@ entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para ver los atletas de este grupo.' });
         }
 
-        // CORRECCIÓN V5: El JOIN hacia detalles_atletas ahora es por id_usuario
+        // Añadido u.id_usuario aquí también por consistencia
         const query = `
             SELECT a.id_atleta, a.curp, a.fecha_nacimiento, 
-                   u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta,
+                   u.id_usuario, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta,
                    ce.nombre_estatus, tc.nomenclatura AS talla_camisa
             FROM atletas a
             INNER JOIN usuarios u ON a.id_usuario = u.id_usuario
