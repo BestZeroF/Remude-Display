@@ -1,28 +1,60 @@
-// src/views/admin/VistaPadronAtletas.jsx
 import React, { useState, useEffect } from 'react';
-import { Search, FileSpreadsheet, FileText, Eye, Edit, Trash2 } from 'lucide-react';
+import { Search, FileSpreadsheet, FileText, Eye, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
 
 export default function VistaPadronAtletas() {
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [filtroActivo, setFiltroActivo] = useState('Todos');
   const [atletas, setAtletas] = useState([]);
 
-  // Simulamos carga de datos del backend
+  // Conexión real al backend
   useEffect(() => {
-    setTimeout(() => {
-      setAtletas([
-        { id: 1, nombre: "Daniela Aguilar Medina", curp: "BCDE951213PQRSTU41", municipio: "Bacalar", disciplina: "Natación", club: "Sin Club", estatus: "Validado" },
-        { id: 2, nombre: "Gerardo Amaro", curp: "AABG061118HQRMTRA4", municipio: "Bacalar", disciplina: "Ciclismo", club: "Sin Club", estatus: "Validado" },
-        { id: 3, nombre: "David Castillo Garcia", curp: "YZ891211ARCDEF56", municipio: "Bacalar", disciplina: "Voleibol", club: "Club Jorge 17", estatus: "En revisión" },
-        { id: 4, nombre: "Isabella Castro Castro", curp: "CDEF921124CDEFGH26", municipio: "Bacalar", disciplina: "Béisbol", club: "Sin Club", estatus: "Rechazado" },
-        { id: 5, nombre: "Alejandro Castro Garcia", curp: "XYZ921019PQRSTU29", municipio: "Bacalar", disciplina: "Atletismo", club: "Club Francisco 95", estatus: "Pendiente" },
-      ]);
-      setCargando(false);
-    }, 600);
+    obtenerAtletas();
   }, []);
 
-  // Lógica de filtrado
+  const obtenerAtletas = async () => {
+    try {
+      setCargando(true);
+      const token = localStorage.getItem('token_remude');
+      
+      const respuesta = await fetch('http://localhost:3000/api/admin/usuarios', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!respuesta.ok) {
+        throw new Error('Error al obtener el padrón de usuarios');
+      }
+
+      const data = await respuesta.json();
+      
+      // Filtramos solo los que son Atletas y mapeamos los datos al formato de la tabla
+      const atletasMapeados = data.usuarios
+        .filter(u => u.nombre_rol && u.nombre_rol.toLowerCase() === 'atleta')
+        .map(u => ({
+          id_usuario: u.id_usuario, // PIVOTE UNIVERSAL V8
+          nombre: `${u.nombre} ${u.primer_apellido} ${u.segundo_apellido || ''}`.trim(),
+          curp: u.curp || 'Sin CURP',
+          municipio: "Bacalar", // Dato por defecto del municipio
+          disciplina: "Múltiple/General", // Placeholder hasta hacer JOIN con disciplinas en este endpoint
+          entrenador: u.nombre_entrenador ? `${u.nombre_entrenador} ${u.apellido_entrenador}` : "Sin Entrenador",
+          estatus: u.estatus_atleta || 'Pendiente'
+        }));
+
+      setAtletas(atletasMapeados);
+    } catch (err) {
+      console.error(err);
+      setError('No se pudo cargar el padrón de deportistas.');
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  // Lógica de filtrado en el cliente
   const atletasFiltrados = atletas.filter(atleta => {
     const coincideBusqueda = busqueda === '' || 
       atleta.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
@@ -47,16 +79,49 @@ export default function VistaPadronAtletas() {
     }
   };
 
+  // Función base para dictaminar (Siguiente fase)
+  const manejarDictamen = async (id_usuario, nuevo_estatus_id) => {
+    if(!window.confirm('¿Estás seguro de cambiar el estatus de este atleta?')) return;
+    
+    try {
+      const token = localStorage.getItem('token_remude');
+      const respuesta = await fetch(`http://localhost:3000/api/admin/dictamen/${id_usuario}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ id_estatus: nuevo_estatus_id })
+      });
+
+      if (respuesta.ok) {
+        alert('Estatus actualizado correctamente');
+        obtenerAtletas(); // Recargar la tabla
+      } else {
+        const errorData = await respuesta.json();
+        alert(errorData.message || 'Error al actualizar el estatus');
+      }
+    } catch (error) {
+      alert('Error de conexión con el servidor.');
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto pb-10 animate-fade-in flex flex-col h-[calc(100vh-140px)]">
       
       {/* HEADER TÍTULO */}
       <div className="mb-6 mt-2 shrink-0">
         <h2 className="text-3xl font-black text-[#7a2031] tracking-tight">Padrón de Deportistas</h2>
-        <p className="text-sm font-medium text-gray-500 mt-1">Registro oficial de atletas, disciplinas y clubes deportivos.</p>
+        <p className="text-sm font-medium text-gray-500 mt-1">Registro oficial de atletas, disciplinas y delegaciones deportivas.</p>
       </div>
 
-      {/* BARRA DE HERRAMIENTAS (Buscador, Filtros, Exportación) */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-xl font-bold border border-red-200">
+          {error}
+        </div>
+      )}
+
+      {/* BARRA DE HERRAMIENTAS */}
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 mb-6 shrink-0 flex flex-col xl:flex-row gap-4 justify-between items-center">
         
         {/* Buscador */}
@@ -73,7 +138,7 @@ export default function VistaPadronAtletas() {
           />
         </div>
 
-        {/* Filtros tipo "Píldora" */}
+        {/* Filtros */}
         <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-center">
           {['Todos', 'Validado', 'En revisión', 'Pendiente', 'Rechazado'].map((filtro) => (
             <button
@@ -108,7 +173,7 @@ export default function VistaPadronAtletas() {
         </div>
       </div>
 
-      {/* LISTA DE ATLETAS (Estilo tarjetas horizontales) */}
+      {/* LISTA DE ATLETAS */}
       <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-3 pb-12">
         <style>{`
           .custom-scrollbar::-webkit-scrollbar { width: 6px; }
@@ -117,24 +182,27 @@ export default function VistaPadronAtletas() {
           .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #d1d5db; }
         `}</style>
 
-        {/* Encabezados de columna (Opcional, pero ayuda a la estructura visual) */}
+        {/* Encabezados */}
         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          <div className="col-span-5">Perfil Atlético</div>
-          <div className="col-span-3">Disciplina & Club</div>
+          <div className="col-span-4">Perfil Atlético</div>
+          <div className="col-span-3">Disciplina & Entrenador</div>
           <div className="col-span-2 text-center">Estado Oficial</div>
-          <div className="col-span-2 text-center">Acciones</div>
+          <div className="col-span-3 text-center">Acciones y Dictamen</div>
         </div>
 
         {cargando ? (
-          <div className="text-center py-12 text-gray-400 font-medium">Cargando padrón...</div>
+          <div className="text-center py-12 text-gray-400 font-medium flex flex-col items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7a2031] mb-4"></div>
+            Cargando padrón oficial desde la base de datos...
+          </div>
         ) : atletasFiltrados.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-3xl shadow-sm text-gray-500 border border-gray-100">No hay registros que coincidan con los filtros.</div>
         ) : (
           atletasFiltrados.map((atleta) => (
-            <div key={atleta.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:grid md:grid-cols-12 gap-4 items-center hover:shadow-md transition-shadow group">
+            <div key={atleta.id_usuario} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex flex-col md:grid md:grid-cols-12 gap-4 items-center hover:shadow-md transition-shadow group">
               
               {/* Info Personal */}
-              <div className="col-span-5 flex items-center w-full">
+              <div className="col-span-4 flex items-center w-full">
                 <div className="w-12 h-12 rounded-xl bg-gray-900 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-inner">
                   {getIniciales(atleta.nombre)}
                 </div>
@@ -146,13 +214,14 @@ export default function VistaPadronAtletas() {
                 </div>
               </div>
 
-              {/* Disciplina y Club */}
+              {/* Disciplina y Entrenador */}
               <div className="col-span-3 w-full flex flex-col justify-center items-start md:items-start">
                 <span className="text-[10px] font-black text-[#7a2031] bg-[#7a2031]/10 px-2 py-0.5 rounded-md uppercase tracking-wider mb-1">
                   {atleta.disciplina}
                 </span>
-                <span className="text-xs text-gray-500 font-medium truncate w-full">
-                  {atleta.club}
+                <span className="text-xs text-gray-500 font-medium truncate w-full flex items-center">
+                  <span className="w-1.5 h-1.5 bg-gray-300 rounded-full mr-2"></span>
+                  {atleta.entrenador}
                 </span>
               </div>
 
@@ -164,19 +233,30 @@ export default function VistaPadronAtletas() {
                 </span>
               </div>
 
-              {/* Acciones */}
-              <div className="col-span-2 w-full flex justify-end md:justify-center gap-1">
-                <button className="p-2 text-gray-400 hover:text-[#c2a649] hover:bg-[#c2a649]/10 rounded-lg transition-colors" title="Ver Documentos">
+              {/* Acciones & Dictamen (Administrador) */}
+              <div className="col-span-3 w-full flex justify-end md:justify-center gap-1 items-center">
+                
+                {/* Botones de Dictamen Rápido (Solo visibles si está 'En revisión' o 'Pendiente') */}
+                {(atleta.estatus.toLowerCase() === 'en revisión' || atleta.estatus.toLowerCase() === 'pendiente') && (
+                  <div className="flex bg-gray-50 rounded-lg p-0.5 mr-2 border border-gray-100">
+                    <button onClick={() => manejarDictamen(atleta.id_usuario, 3)} className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-white rounded-md transition-all shadow-sm" title="Aprobar / Validar">
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => manejarDictamen(atleta.id_usuario, 4)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-white rounded-md transition-all shadow-sm" title="Rechazar">
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Acciones estándar */}
+                <button className="p-2 text-gray-400 hover:text-[#c2a649] hover:bg-[#c2a649]/10 rounded-lg transition-colors" title="Ver Expediente (Docs)">
                   <FileText className="w-4 h-4" />
                 </button>
                 <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver Ficha Completa">
                   <Eye className="w-4 h-4" />
                 </button>
-                <button className="p-2 text-gray-400 hover:text-[#7a2031] hover:bg-red-50 rounded-lg transition-colors" title="Editar">
+                <button className="p-2 text-gray-400 hover:text-[#7a2031] hover:bg-red-50 rounded-lg transition-colors" title="Editar / Reasignar">
                   <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar/Suspender">
-                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
