@@ -3,10 +3,12 @@ const router = express.Router();
 const eventosController = require('../controllers/eventos.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 
-// Proteger con JWT (Requerido para leer req.user en el controller)
+// Proteger todas las rutas con JWT
 router.use(authMiddleware);
 
-// POST /api/eventos
+// Rutas de eventos
+router.get('/', eventosController.obtenerEventos);
 router.post('/', eventosController.crearEvento);
+router.delete('/:id', eventosController.eliminarEvento);
 
 module.exports = router;

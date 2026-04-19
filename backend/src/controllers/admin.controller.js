@@ -3,21 +3,15 @@ const db = require('../config/db');
 const adminController = {};
 
 // ==========================================
-// [NUEVO] GET /api/admin/dashboard
-// Para alimentar los KPIs y la tabla rápida de la vista principal
+// GET /api/admin/dashboard
 // ==========================================
 adminController.getDashboardData = async (req, res) => {
     try {
-        // 1. Totales principales
         const resAtletas = await db.query('SELECT COUNT(*) FROM atletas');
         const resEntrenadores = await db.query('SELECT COUNT(*) FROM entrenadores');
-        
-        // Basado en Regla de Oro #4: 2 = En Revisión, 4 = Rechazado
         const resRevision = await db.query('SELECT COUNT(*) FROM atletas WHERE id_estatus = 2');
         const resRechazados = await db.query('SELECT COUNT(*) FROM atletas WHERE id_estatus = 4');
 
-        // 2. Obtener los últimos registros (Actividad Reciente)
-        // Usamos una versión simplificada de tu query de usuarios para el dashboard
         const queryRecientes = `
             SELECT 
                 a.id_atleta as id, 
@@ -52,7 +46,8 @@ adminController.getDashboardData = async (req, res) => {
 };
 
 // ==========================================
-// GET /api/admin/usuarios -> Ver absolutamente a todos
+// GET /api/admin/usuarios 
+// [ACTUALIZADO V8.3] - Incluye Disciplina y Progreso para Atletas
 // ==========================================
 adminController.obtenerTodosLosUsuarios = async (req, res) => {
     try {
@@ -68,15 +63,40 @@ adminController.obtenerTodosLosUsuarios = async (req, res) => {
                 COALESCE(a.curp, e.curp) as curp,
                 ce.nombre_estatus AS estatus_atleta,
                 ue.nombre AS nombre_entrenador,
-                ue.primer_apellido AS apellido_entrenador
+                ue.primer_apellido AS apellido_entrenador,
+                e.especialidad,
+                (SELECT COUNT(*) FROM atletas WHERE id_entrenador = e.id_entrenador) as total_atletas,
+                
+                -- Campos exclusivos para Atletas: Disciplina y Progreso
+                COALESCE(d.nombre_disciplina, ent_asignado.especialidad, 'Sin asignar') AS disciplina_atleta,
+                (
+                    CASE WHEN pp.id_usuario IS NOT NULL THEN 25 ELSE 0 END +
+                    CASE WHEN dom.id_usuario IS NOT NULL THEN 25 ELSE 0 END +
+                    CASE WHEN pm.id_usuario IS NOT NULL THEN 25 ELSE 0 END +
+                    CASE WHEN da.id_usuario IS NOT NULL THEN 25 ELSE 0 END
+                ) AS progreso_ficha
+
             FROM usuarios u
             INNER JOIN catalogo_roles cr ON u.id_rol = cr.id_rol
+            
+            -- Joins Base
             LEFT JOIN atletas a ON u.id_usuario = a.id_usuario
             LEFT JOIN catalogo_estatus ce ON a.id_estatus = ce.id_estatus
             LEFT JOIN entrenadores e ON u.id_usuario = e.id_usuario
             LEFT JOIN administrativos ad ON u.id_usuario = ad.id_usuario
+            
+            -- Joins para Entrenador Asignado
             LEFT JOIN entrenadores ent_asignado ON a.id_entrenador = ent_asignado.id_entrenador
             LEFT JOIN usuarios ue ON ent_asignado.id_usuario = ue.id_usuario
+            
+            -- Joins para Disciplina y Progreso
+            LEFT JOIN atleta_disciplina adisc ON a.id_atleta = adisc.id_atleta
+            LEFT JOIN disciplinas d ON adisc.id_disciplina = d.id_disciplina
+            LEFT JOIN perfiles_personales pp ON u.id_usuario = pp.id_usuario
+            LEFT JOIN domicilios dom ON u.id_usuario = dom.id_usuario
+            LEFT JOIN perfiles_medicos pm ON u.id_usuario = pm.id_usuario
+            LEFT JOIN detalles_atletas da ON u.id_usuario = da.id_usuario
+            
             ORDER BY u.id_usuario DESC;
         `;
         const { rows } = await db.query(query);
@@ -145,7 +165,7 @@ adminController.dictaminarPerfil = async (req, res) => {
             return res.status(404).json({ message: 'Atleta no encontrado.' });
         }
 
-        res.json({ message: `Estatus del perfil actualizado correctamente`, data: rows[0] });
+        res.json({ message: 'Estatus del perfil actualizado correctamente', data: rows[0] });
     } catch (error) {
         console.error('Error al dictaminar:', error);
         if (error.code === '23503') return res.status(400).json({ message: 'El estatus proporcionado no existe en el catálogo.' });
@@ -173,7 +193,7 @@ adminController.eliminarUsuario = async (req, res) => {
         }
 
         // Si es atleta, lo marcamos inactivo (id_estatus = 2 o el que corresponda a Inactivo en tu BD)
-        await db.query(`UPDATE atletas SET id_estatus = 2 WHERE id_usuario = $1`, [id_usuario]);
+        await db.query('UPDATE atletas SET id_estatus = 2 WHERE id_usuario = $1', [id_usuario]);
 
         res.json({ message: 'Usuario dado de baja exitosamente (Soft Delete).', data: rows[0] });
     } catch (error) {

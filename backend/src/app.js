@@ -14,6 +14,7 @@ const catalogosRoutes = require('./routes/catalogos.routes');
 const eventosRoutes = require('./routes/eventos.routes');
 const solicitudesRoutes = require('./routes/solicitudes.routes');
 const adminRoutes = require('./routes/admin.routes');
+const clubesRoutes = require('./routes/clubes.routes');
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/catalogos', catalogosRoutes);
 app.use('/api/eventos', eventosRoutes);
 app.use('/api/solicitudes', solicitudesRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/clubes', clubesRoutes);
 
 // Endpoint de prueba para saber que todo está funcionando bien
 app.get('/', (req, res) => {

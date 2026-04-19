@@ -19,6 +19,8 @@ import SidebarItem from '../components/SidebarItem';
 import VistaAdminDashboard from './admin/VistaAdminDashboard';
 import VistaPadronAtletas from './admin/VistaPadronAtletas';
 import VistaPadronEntrenadores from './admin/VistaPadronEntrenadores';
+import VistaClubesEquipos from './admin/VistaClubesEquipos';
+import VistaCalendarioEventos from './admin/VistaCalendarioEventos';
 
 export default function PanelAdmin({ cambiarVista }) {
   // Estado para controlar el ancho del sidebar (Menú Hamburguesa)
@@ -47,8 +49,13 @@ export default function PanelAdmin({ cambiarVista }) {
         return <VistaPadronAtletas />;
       case 'entrenadores':
         return <VistaPadronEntrenadores />;
+      case 'clubes':
+        return <VistaClubesEquipos />;
+      case 'eventos':
+        return <VistaCalendarioEventos />;
       default:
         return <VistaAdminDashboard />;
+      
     }
   };
 

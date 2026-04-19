@@ -17,6 +17,11 @@ const esAdmin = (req, res, next) => {
 // RUTAS DEL ADMINISTRADOR (Prefijo: /api/admin)
 // Protegidas por JWT Global y Verificación de Rol
 // ==========================================
+
+// [CORRECCIÓN V8.2] -> Ruta del dashboard conectada
+router.get('/dashboard', authMiddleware, esAdmin, adminController.getDashboardData);
+
+// Rutas existentes
 router.get('/usuarios', authMiddleware, esAdmin, adminController.obtenerTodosLosUsuarios);
 router.put('/atletas/:id_atleta/reasignar', authMiddleware, esAdmin, adminController.reasignarAtleta);
 router.put('/dictamen/:id_usuario', authMiddleware, esAdmin, adminController.dictaminarPerfil);
