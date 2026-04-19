@@ -21,8 +21,9 @@ import VistaPadronAtletas from './admin/VistaPadronAtletas';
 import VistaPadronEntrenadores from './admin/VistaPadronEntrenadores';
 import VistaClubesEquipos from './admin/VistaClubesEquipos';
 import VistaCalendarioEventos from './admin/VistaCalendarioEventos';
+import VistaConfiguracion from './admin/VistaConfiguracion'; // [NUEVO] Importamos la vista de configuración
 
-// [CORREGIDO] Importación directa porque están al mismo nivel en la carpeta views
+// Importación directa porque están al mismo nivel en la carpeta views
 import VistaPerfilAtleta from './VistaPerfilAtleta'; 
 
 export default function PanelAdmin({ cambiarVista }) {
@@ -60,6 +61,8 @@ export default function PanelAdmin({ cambiarVista }) {
         return <VistaClubesEquipos />;
       case 'eventos':
         return <VistaCalendarioEventos />;
+      case 'configuracion': // [NUEVO] Caso añadido para el Switch
+        return <VistaConfiguracion />;
       case 'perfil':
         return (
           <VistaPerfilAtleta 
@@ -100,7 +103,7 @@ export default function PanelAdmin({ cambiarVista }) {
 
         <nav className="flex-1 mt-6 space-y-2 px-3 overflow-y-auto custom-scrollbar">
           {opcionesMenu.map((item) => (
-            <div key={item.id} onClick={() => setVistaPanel(item.id)}>
+            <div key={item.id} onClick={() => setVistaPanel(item.id)} className="cursor-pointer">
               <SidebarItem icono={item.icono} etiqueta={item.etiqueta} estaAbierto={sidebarAbierta} activo={vistaPanel === item.id} />
             </div>
           ))}
@@ -118,7 +121,9 @@ export default function PanelAdmin({ cambiarVista }) {
         <header className="h-24 px-8 flex justify-between items-center bg-white z-10 shrink-0 shadow-sm border-b border-gray-100">
           <div>
             <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              {vistaPanel === 'perfil' ? 'Expediente Detallado' : (opcionesMenu.find(o => o.id === vistaPanel)?.etiqueta || 'Administración')}
+              {vistaPanel === 'perfil' ? 'Expediente Detallado' : 
+               vistaPanel === 'configuracion' ? 'Configuración del Sistema' : 
+               (opcionesMenu.find(o => o.id === vistaPanel)?.etiqueta || 'Administración')}
             </h2>
             <p className="text-xs font-bold text-[#c2a649] uppercase tracking-widest mt-1">Panel de Control Municipal de Bacalar</p>
           </div>
@@ -137,7 +142,7 @@ export default function PanelAdmin({ cambiarVista }) {
           </div>
           <footer className="mt-auto py-6 w-full text-[10px] text-gray-400 font-bold uppercase tracking-widest flex justify-between items-center border-t border-gray-200/50">
             <span>© {new Date().getFullYear()} DIRECCIÓN DE DEPORTES - BACALAR</span>
-            <div className="flex space-x-6"><span className="text-[#c2a649]">v8.2 - REMUDE ASSISTANT</span></div>
+            <div className="flex space-x-6"><span className="text-[#c2a649]">v9.0 - REMUDE FULL-STACK</span></div>
           </footer>
         </main>
       </div>
