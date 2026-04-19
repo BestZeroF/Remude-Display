@@ -2,12 +2,13 @@ const db = require('../config/db');
 
 const entrenadoresController = {};
 
+// ==========================================
 // GET /api/entrenadores/dashboard
+// ==========================================
 entrenadoresController.obtenerDashboard = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
 
-        // 1. Obtener info del entrenador 
         const queryEntrenador = `
             SELECT e.id_entrenador, e.titulo_logro, e.especialidad, u.nombre, u.primer_apellido, u.segundo_apellido
             FROM entrenadores e
@@ -21,7 +22,6 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
         }
         const entrenador = entrenadorRows[0];
 
-        // 2. Obtener notificaciones no leídas
         const queryNotif = `
             SELECT id_notificaciones, titulo, mensaje, fecha_creacion
             FROM notificaciones 
@@ -30,7 +30,6 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
         `;
         const { rows: notificaciones } = await db.query(queryNotif, [id_usuario]);
 
-        // 3. Obtener clasificación de atletas por estatus
         const queryAtletas = `
             SELECT ce.nombre_estatus, COUNT(a.id_atleta) as total
             FROM atletas a
@@ -53,14 +52,13 @@ entrenadoresController.obtenerDashboard = async (req, res) => {
 };
 
 // ==========================================
-// NUEVO V6: GET /api/entrenadores/mis-atletas
+// GET /api/entrenadores/mis-atletas
 // ==========================================
 entrenadoresController.obtenerMisAtletas = async (req, res) => {
     try {
         const id_usuario_token = req.user.id_usuario;
         const { buscar, estatus, disciplina } = req.query; 
 
-        // 1. Obtener el id_entrenador asociado a la cuenta que hace la petición
         const queryEntrenador = 'SELECT id_entrenador FROM entrenadores WHERE id_usuario = $1';
         const { rows: entrenadorRows } = await db.query(queryEntrenador, [id_usuario_token]);
 
@@ -69,7 +67,6 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
         }
         const id_entrenador = entrenadorRows[0].id_entrenador;
 
-        // 2. Construir la consulta dinámica (Añadido u.id_usuario)
         let query = `
             SELECT 
                 u.id_usuario,
@@ -100,7 +97,6 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
         const values = [id_entrenador];
         let paramIndex = 2; 
 
-        // 3. Aplicar Filtros (si existen)
         if (buscar) {
             query += ` AND (u.nombre ILIKE $${paramIndex} OR u.primer_apellido ILIKE $${paramIndex} OR a.curp ILIKE $${paramIndex})`;
             values.push(`%${buscar}%`);
@@ -121,10 +117,8 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
 
         query += ` ORDER BY u.primer_apellido ASC`;
 
-        // 4. Ejecutar consulta
         const { rows } = await db.query(query, values);
         
-        // 5. Formatear resultados (Añadido id_usuario al mapeo)
         const resultadoFormateado = rows.map(row => ({
             id_usuario: row.id_usuario,
             id_atleta: row.id_atleta,
@@ -144,7 +138,9 @@ entrenadoresController.obtenerMisAtletas = async (req, res) => {
     }
 };
 
-// GET /api/entrenadores (Listar todos - Útil para el Administrador)
+// ==========================================
+// GET /api/entrenadores
+// ==========================================
 entrenadoresController.listarEntrenadores = async (req, res) => {
     try {
         const query = `
@@ -161,16 +157,19 @@ entrenadoresController.listarEntrenadores = async (req, res) => {
     }
 };
 
-// GET /api/entrenadores/:id (Perfil específico)
+// ==========================================
+// [CORREGIDO V8] GET /api/entrenadores/:id
+// Ahora busca por id_usuario como Pivote Universal
+// ==========================================
 entrenadoresController.obtenerEntrenadorPorId = async (req, res) => {
     try {
-        const { id } = req.params;
+        const { id } = req.params; // Esto ahora es id_usuario
         const query = `
             SELECT e.id_entrenador, e.titulo_logro, e.fecha_logro, e.descripcion, e.especialidad, e.curp,
                    u.id_usuario, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta
             FROM entrenadores e
             INNER JOIN usuarios u ON e.id_usuario = u.id_usuario
-            WHERE e.id_entrenador = $1
+            WHERE u.id_usuario = $1 
         `;
         const { rows } = await db.query(query, [id]);
 
@@ -184,15 +183,18 @@ entrenadoresController.obtenerEntrenadorPorId = async (req, res) => {
     }
 };
 
-// PUT /api/entrenadores/:id (Actualizar datos del entrenador)
+// ==========================================
+// [CORREGIDO V8] PUT /api/entrenadores/:id
+// Ahora edita basándose en id_usuario
+// ==========================================
 entrenadoresController.actualizarEntrenador = async (req, res) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params; // Esto ahora es id_usuario
         const id_usuario_token = req.user.id_usuario;
         const id_rol = req.user.id_rol;
         const { nombre, primer_apellido, segundo_apellido, titulo_logro, descripcion, especialidad } = req.body;
 
-        const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_entrenador = $1';
+        const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_usuario = $1';
         const checkResult = await db.query(checkQuery, [id]);
 
         if (checkResult.rows.length === 0) {
@@ -209,14 +211,14 @@ entrenadoresController.actualizarEntrenador = async (req, res) => {
                 SET nombre = COALESCE($1, nombre),
                     primer_apellido = COALESCE($2, primer_apellido),
                     segundo_apellido = COALESCE($3, segundo_apellido)
-                WHERE id_usuario = (SELECT id_usuario FROM entrenadores WHERE id_entrenador = $4)
+                WHERE id_usuario = $4
                 RETURNING id_usuario, nombre, primer_apellido, segundo_apellido
             )
             UPDATE entrenadores
             SET titulo_logro = COALESCE($5, titulo_logro), 
                 descripcion = COALESCE($6, descripcion), 
                 especialidad = COALESCE($7, especialidad)
-            WHERE id_entrenador = $4
+            WHERE id_usuario = $4
             RETURNING id_entrenador, titulo_logro, descripcion, especialidad,
                       (SELECT nombre FROM actualizacion_usuario),
                       (SELECT primer_apellido FROM actualizacion_usuario),
@@ -237,14 +239,16 @@ entrenadoresController.actualizarEntrenador = async (req, res) => {
     }
 };
 
-// GET /api/entrenadores/:id/atletas (Lista de atletas del grupo del entrenador)
+// ==========================================
+// [CORREGIDO V8] GET /api/entrenadores/:id/atletas
+// ==========================================
 entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
     try {
-        const { id } = req.params; 
+        const { id } = req.params; // id_usuario
         const id_usuario_token = req.user.id_usuario;
         const id_rol = req.user.id_rol;
 
-        const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_entrenador = $1';
+        const checkQuery = 'SELECT id_usuario FROM entrenadores WHERE id_usuario = $1';
         const checkResult = await db.query(checkQuery, [id]);
 
         if (checkResult.rows.length === 0) {
@@ -255,7 +259,6 @@ entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
             return res.status(403).json({ message: 'No tienes permisos para ver los atletas de este grupo.' });
         }
 
-        // Añadido u.id_usuario aquí también por consistencia
         const query = `
             SELECT a.id_atleta, a.curp, a.fecha_nacimiento, 
                    u.id_usuario, u.nombre, u.primer_apellido, u.segundo_apellido, u.correo, u.estado_cuenta,
@@ -265,7 +268,7 @@ entrenadoresController.obtenerAtletasDeEntrenador = async (req, res) => {
             INNER JOIN catalogo_estatus ce ON a.id_estatus = ce.id_estatus
             LEFT JOIN detalles_atletas da ON u.id_usuario = da.id_usuario
             LEFT JOIN catalogo_tallas tc ON da.id_talla_camisa = tc.id_talla
-            WHERE a.id_entrenador = $1
+            WHERE a.id_entrenador = (SELECT id_entrenador FROM entrenadores WHERE id_usuario = $1)
             ORDER BY u.primer_apellido ASC
         `;
         
