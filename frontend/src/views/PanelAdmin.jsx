@@ -13,8 +13,12 @@ import {
   Bell 
 } from 'lucide-react';
 
-// Importamos los elementos gráficos y públicos
-import logoBacalar from '../assets/logo-bacalar.png';
+// Importamos los logos correctos desde la carpeta assets
+import logoMunicipio from '../assets/logo-municipio.png';
+import logoBlancoRemude from '../assets/logo-blanco-remude.png';
+import logoIcono from '../assets/logo-icono.png';
+
+// Importamos los componentes
 import SidebarItem from '../components/SidebarItem'; 
 import FooterPublico from '../components/FooterPublico'; 
 
@@ -67,21 +71,18 @@ export default function PanelAdmin({ cambiarVista }) {
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 w-full relative">
       {/* SIDEBAR MANTIENE SU ESTILO OSCURO Y ELEGANTE */}
-      <aside className={`bg-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col shadow-2xl z-20 ${sidebarAbierta ? 'w-72' : 'w-24'}`}>
+      <aside className={`bg-[#0f172a] text-white transition-all duration-300 ease-in-out flex flex-col shadow-2xl z-20 ${sidebarAbierta ? 'w-72' : 'w-24'}`}>
         <div className={`flex ${sidebarAbierta ? 'flex-row items-center justify-between p-4' : 'flex-col items-center justify-center gap-1'} h-24 border-b border-gray-800/50 shrink-0`}>
-          <div className="flex items-center justify-center overflow-hidden">
+          <div className="flex items-center justify-center overflow-hidden w-full px-2">
              {sidebarAbierta ? (
-               <div className="flex items-center gap-2 animate-fade-in">
-                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1">
-                    <span className="text-[#7a2031] font-black text-xl">R</span>
-                 </div>
-                 <span className="font-black text-xl tracking-tighter uppercase">
-                   REMUDE <span className="text-[10px] block text-gray-400 -mt-1 tracking-widest font-bold">ADMINISTRACIÓN</span>
-                 </span>
+               <div className="flex items-center w-full animate-fade-in">
+                 {/* Logo extendido */}
+                 <img src={logoBlancoRemude} alt="Sistema Remude" className="h-10 w-auto object-contain" />
                </div>
              ) : (
-               <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1 animate-fade-in shadow-md">
-                 <span className="text-[#7a2031] font-black text-xl">R</span>
+               <div className="flex items-center justify-center w-full animate-fade-in">
+                 {/* Logo contraído (Icono) */}
+                 <img src={logoIcono} alt="Icono Remude" className="h-10 w-10 object-contain" />
                </div>
              )}
           </div>
@@ -114,7 +115,8 @@ export default function PanelAdmin({ cambiarVista }) {
         <header className="h-24 px-8 flex justify-between items-center bg-white z-50 shrink-0 shadow-sm border-b border-gray-100 relative">
           
           <div className="flex items-center gap-4">
-            <img src={logoBacalar} alt="Municipio de Bacalar" className="w-12 h-14 object-contain" />
+            {/* Logo del municipio en la Topbar */}
+            <img src={logoMunicipio} alt="Municipio de Bacalar" className="h-12 w-auto object-contain" />
             <div className="border-l-2 border-gray-100 pl-4">
               <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">Hola, Administrador</h2>
               <p className="text-sm font-medium text-gray-500">Bacalar, Quintana Roo</p>
@@ -158,9 +160,6 @@ export default function PanelAdmin({ cambiarVista }) {
             {renderizarContenido()}
           </div>
           
-          {/* ============================================================== */}
-          {/* FOOTER GLOBAL REUTILIZANDO TU COMPONENTE */}
-          {/* ============================================================== */}
           <FooterPublico cambiarVista={cambiarVista} />
         </main>
       </div>
