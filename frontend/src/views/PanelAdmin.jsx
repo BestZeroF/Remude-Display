@@ -9,11 +9,14 @@ import {
   CalendarDays, 
   Settings, 
   LogOut, 
-  Menu 
+  Menu,
+  Bell 
 } from 'lucide-react';
 
-// Importamos el componente SidebarItem reutilizable
+// Importamos los elementos gráficos y públicos
+import logoBacalar from '../assets/logo-bacalar.png';
 import SidebarItem from '../components/SidebarItem'; 
+import FooterPublico from '../components/FooterPublico'; 
 
 // Importamos las sub-vistas del administrador
 import VistaAdminDashboard from './admin/VistaAdminDashboard';
@@ -21,17 +24,17 @@ import VistaPadronAtletas from './admin/VistaPadronAtletas';
 import VistaPadronEntrenadores from './admin/VistaPadronEntrenadores';
 import VistaClubesEquipos from './admin/VistaClubesEquipos';
 import VistaCalendarioEventos from './admin/VistaCalendarioEventos';
-import VistaConfiguracion from './admin/VistaConfiguracion'; // [NUEVO] Importamos la vista de configuración
-
-// Importación directa porque están al mismo nivel en la carpeta views
+import VistaConfiguracion from './admin/VistaConfiguracion'; 
 import VistaPerfilAtleta from './VistaPerfilAtleta'; 
 
 export default function PanelAdmin({ cambiarVista }) {
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
   const [vistaPanel, setVistaPanel] = useState('dashboard');
-  
-  // Estado para saber qué perfil abrir
   const [perfilSeleccionado, setPerfilSeleccionado] = useState({ id: null, tipo: null });
+  
+  // Estados para la Topbar
+  const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
+  const [inscripcionesAbiertas] = useState(true);
 
   const opcionesMenu = [
     { id: 'dashboard', etiqueta: 'Escritorio', icono: LayoutDashboard },
@@ -43,7 +46,6 @@ export default function PanelAdmin({ cambiarVista }) {
     { id: 'configuracion', etiqueta: 'Configuración', icono: Settings },
   ];
 
-  // Función puente que pasaremos a los padrones
   const abrirPerfil = (id, tipo) => {
     setPerfilSeleccionado({ id, tipo });
     setVistaPanel('perfil'); 
@@ -51,33 +53,20 @@ export default function PanelAdmin({ cambiarVista }) {
 
   const renderizarContenido = () => {
     switch (vistaPanel) {
-      case 'dashboard':
-        return <VistaAdminDashboard />;
-      case 'atletas':
-        return <VistaPadronAtletas abrirPerfil={abrirPerfil} />;
-      case 'entrenadores':
-        return <VistaPadronEntrenadores abrirPerfil={abrirPerfil} />;
-      case 'clubes':
-        return <VistaClubesEquipos />;
-      case 'eventos':
-        return <VistaCalendarioEventos />;
-      case 'configuracion': // [NUEVO] Caso añadido para el Switch
-        return <VistaConfiguracion />;
-      case 'perfil':
-        return (
-          <VistaPerfilAtleta 
-            cambiarVistaPanel={setVistaPanel} 
-            perfilId={perfilSeleccionado.id} 
-            tipoPerfil={perfilSeleccionado.tipo} 
-          />
-        );
-      default:
-        return <VistaAdminDashboard />;
+      case 'dashboard': return <VistaAdminDashboard />;
+      case 'atletas': return <VistaPadronAtletas abrirPerfil={abrirPerfil} />;
+      case 'entrenadores': return <VistaPadronEntrenadores abrirPerfil={abrirPerfil} />;
+      case 'clubes': return <VistaClubesEquipos />;
+      case 'eventos': return <VistaCalendarioEventos />;
+      case 'configuracion': return <VistaConfiguracion />;
+      case 'perfil': return <VistaPerfilAtleta cambiarVistaPanel={setVistaPanel} perfilId={perfilSeleccionado.id} tipoPerfil={perfilSeleccionado.tipo} />;
+      default: return <VistaAdminDashboard />;
     }
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 w-full relative">
+      {/* SIDEBAR MANTIENE SU ESTILO OSCURO Y ELEGANTE */}
       <aside className={`bg-gray-900 text-white transition-all duration-300 ease-in-out flex flex-col shadow-2xl z-20 ${sidebarAbierta ? 'w-72' : 'w-24'}`}>
         <div className={`flex ${sidebarAbierta ? 'flex-row items-center justify-between p-4' : 'flex-col items-center justify-center gap-1'} h-24 border-b border-gray-800/50 shrink-0`}>
           <div className="flex items-center justify-center overflow-hidden">
@@ -118,32 +107,61 @@ export default function PanelAdmin({ cambiarVista }) {
       </aside>
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header className="h-24 px-8 flex justify-between items-center bg-white z-10 shrink-0 shadow-sm border-b border-gray-100">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              {vistaPanel === 'perfil' ? 'Expediente Detallado' : 
-               vistaPanel === 'configuracion' ? 'Configuración del Sistema' : 
-               (opcionesMenu.find(o => o.id === vistaPanel)?.etiqueta || 'Administración')}
-            </h2>
-            <p className="text-xs font-bold text-[#c2a649] uppercase tracking-widest mt-1">Panel de Control Municipal de Bacalar</p>
-          </div>
+        
+        {/* ============================================================== */}
+        {/* TOPBAR GLOBAL CON LOGO DE BACALAR E INDICADOR DEL SISTEMA */}
+        {/* ============================================================== */}
+        <header className="h-24 px-8 flex justify-between items-center bg-white z-50 shrink-0 shadow-sm border-b border-gray-100 relative">
+          
           <div className="flex items-center gap-4">
-            <div className="hidden md:flex flex-col text-right">
-              <span className="text-sm font-bold text-gray-900">Admin General</span>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Bacalar, Q. Roo</span>
+            <img src={logoBacalar} alt="Municipio de Bacalar" className="w-12 h-14 object-contain" />
+            <div className="border-l-2 border-gray-100 pl-4">
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">Hola, Administrador</h2>
+              <p className="text-sm font-medium text-gray-500">Bacalar, Quintana Roo</p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-[#7a2031] text-white flex items-center justify-center font-black shadow-lg border-2 border-white">A</div>
+          </div>
+
+          <div className="flex items-center gap-6">
+            <div className="hidden md:flex flex-col items-end">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Estado del sistema</span>
+              <div className="flex items-center text-xs font-bold text-gray-700 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
+                <span className={`w-2 h-2 rounded-full mr-2 ${inscripcionesAbiertas ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                {inscripcionesAbiertas ? 'En Línea' : 'Cerrado'}
+              </div>
+            </div>
+
+            <div className="relative">
+              <button 
+                onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
+                className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-gray-600 hover:shadow-md transition-all border border-gray-200 relative"
+              >
+                <Bell className="w-5 h-5" />
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              </button>
+
+              {notificacionesAbiertas && (
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden z-50">
+                  <div className="p-5 flex justify-between items-center bg-gray-50/50">
+                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">Notificaciones</h4>
+                  </div>
+                  <div className="p-5 text-center text-xs text-gray-500">No hay notificaciones recientes.</div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-8 pt-6 flex flex-col bg-gray-50/50 relative">
-          <div className="flex-1 animate-fade-in pb-8">
+        <main className="flex-1 overflow-y-auto px-6 md:px-8 pt-6 flex flex-col bg-gray-50/50 relative custom-scrollbar">
+          <style>{`.custom-scrollbar::-webkit-scrollbar { width: 6px; } .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }`}</style>
+          
+          <div className="flex-1 animate-fade-in pb-4">
             {renderizarContenido()}
           </div>
-          <footer className="mt-auto py-6 w-full text-[10px] text-gray-400 font-bold uppercase tracking-widest flex justify-between items-center border-t border-gray-200/50">
-            <span>© {new Date().getFullYear()} DIRECCIÓN DE DEPORTES - BACALAR</span>
-            <div className="flex space-x-6"><span className="text-[#c2a649]">v9.0 - REMUDE FULL-STACK</span></div>
-          </footer>
+          
+          {/* ============================================================== */}
+          {/* FOOTER GLOBAL REUTILIZANDO TU COMPONENTE */}
+          {/* ============================================================== */}
+          <FooterPublico cambiarVista={cambiarVista} />
         </main>
       </div>
     </div>
