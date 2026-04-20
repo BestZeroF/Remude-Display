@@ -29,7 +29,7 @@ export default function VistaConfiguracion() {
         setAdminInfo({
           nombre: 'Admin General Bacalar', // Reemplazar con datos del backend/token
           correo: 'admin@bacalar.gob.mx',
-          rol: 'Administrador del Sistema'
+          rol: 'Administrador del sistema'
         });
       }, 500);
     };
@@ -85,7 +85,7 @@ export default function VistaConfiguracion() {
           <Settings className="w-8 h-8 mr-3" /> Configuración del Sistema
         </h2>
         <p className="text-sm font-medium text-gray-500 mt-1">
-          Gestiona tus credenciales y el comportamiento global de la plataforma Remude.
+          Gestiona tus credenciales y el comportamiento global de la plataforma REMUDE.
         </p>
       </div>
 

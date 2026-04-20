@@ -260,7 +260,7 @@ export default function VistaClubesEquipos() {
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
               <h3 className="font-black text-gray-800 text-lg flex items-center">
                 <Trophy className="w-5 h-5 mr-2 text-[#7a2031]" />
-                Registrar Club Entrelazado
+                Registrar club entrelazado
               </h3>
               <button onClick={() => setMostrarModal(false)} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
                 <X className="w-5 h-5" />
@@ -271,7 +271,7 @@ export default function VistaClubesEquipos() {
               <form id="formClub" onSubmit={manejarRegistro} className="space-y-5">
                 
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nombre del club / Liga *</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nombre del club*</label>
                   <input 
                     type="text" 
                     name="nombre_club" 
