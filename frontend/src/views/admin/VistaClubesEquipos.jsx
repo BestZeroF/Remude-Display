@@ -141,7 +141,7 @@ export default function VistaClubesEquipos() {
         <div>
           <h2 className="text-3xl font-black text-[#7a2031] tracking-tight flex items-center">
             <ClipboardList className="w-8 h-8 mr-3" />
-            Clubes y Equipos
+            Clubes y equipos
           </h2>
           <p className="text-sm font-medium text-gray-500 mt-1">
             Registro y control de organizaciones deportivas del municipio.
@@ -159,7 +159,7 @@ export default function VistaClubesEquipos() {
             onClick={() => setMostrarModal(true)}
             className="bg-[#7a2031] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#5a1523] transition-all flex items-center"
           >
-            <Plus className="w-4 h-4 mr-2" /> Nuevo Registro
+            <Plus className="w-4 h-4 mr-2" /> Nuevo registro
           </button>
         </div>
       </div>
@@ -170,7 +170,7 @@ export default function VistaClubesEquipos() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
             type="text" 
-            placeholder="Buscar club o líder..."
+            placeholder="Buscar club o representante..."
             className="block w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl outline-none text-sm focus:bg-white focus:border-[#7a2031] transition-all"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
@@ -221,7 +221,7 @@ export default function VistaClubesEquipos() {
                 <div className="grid grid-cols-1 gap-3">
                   <div className="flex items-center text-xs text-gray-600 font-bold uppercase tracking-tight">
                     <UserCog className="w-4 h-4 mr-3 text-[#c2a649]" />
-                    <span className="text-gray-400 mr-2 font-medium capitalize">Líder / Representante:</span> 
+                    <span className="text-gray-400 mr-2 font-medium capitalize">Representante:</span> 
                     {club.nombre_representante_real || 'No asignado'}
                   </div>
                   <div className="flex items-center text-xs text-gray-600 font-medium">
@@ -271,7 +271,7 @@ export default function VistaClubesEquipos() {
               <form id="formClub" onSubmit={manejarRegistro} className="space-y-5">
                 
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nombre del Club / Liga *</label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Nombre del club / Liga *</label>
                   <input 
                     type="text" 
                     name="nombre_club" 
@@ -285,14 +285,14 @@ export default function VistaClubesEquipos() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Disciplina Base</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Disciplina base</label>
                     <select 
                       name="id_disciplina" 
                       value={formData.id_disciplina} 
                       onChange={manejarCambioForm}
                       className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
                     >
-                      <option value="">Multidisciplinario / General</option>
+                      <option value="">Multidisciplinario</option>
                       {disciplinasDisponibles.map(disc => (
                         <option key={disc.id_disciplina || disc.id} value={disc.id_disciplina || disc.id}>{disc.nombre_disciplina || disc.nombre}</option>
                       ))}
@@ -300,7 +300,7 @@ export default function VistaClubesEquipos() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de Fundación</label>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fecha de fundación</label>
                     <input 
                       type="date" 
                       name="fecha_fundacion" 
@@ -312,12 +312,12 @@ export default function VistaClubesEquipos() {
                 </div>
 
                 <div className="border-t border-gray-100 pt-5 mt-2">
-                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Datos del Representante</h4>
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Datos del representante</h4>
                   
                   <div className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center">
-                         <UserCog className="w-4 h-4 mr-1 text-[#c2a649]"/> Seleccionar Entrenador Líder
+                         <UserCog className="w-4 h-4 mr-1 text-[#c2a649]"/> Seleccionar entrenador
                       </label>
                       <select 
                         name="id_entrenador_lider" 
@@ -337,7 +337,7 @@ export default function VistaClubesEquipos() {
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Teléfono del Club</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Teléfono del club</label>
                         <input 
                           type="tel" 
                           name="telefono_contacto" 
@@ -348,7 +348,7 @@ export default function VistaClubesEquipos() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Correo del Club</label>
+                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Correo del club</label>
                         <input 
                           type="email" 
                           name="correo_contacto" 
@@ -381,7 +381,7 @@ export default function VistaClubesEquipos() {
                 {guardando ? (
                   <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Guardando...</>
                 ) : (
-                  <><Save className="w-4 h-4 mr-2" /> Registrar Club</>
+                  <><Save className="w-4 h-4 mr-2" /> Registrar club</>
                 )}
               </button>
             </div>

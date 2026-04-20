@@ -62,7 +62,7 @@ export default function VistaCalendarioEventos() {
         <div>
           <h2 className="text-3xl font-black text-[#7a2031] tracking-tight flex items-center">
             <CalendarDays className="w-8 h-8 mr-3" />
-            Calendario de Eventos
+            Calendario de eventos
           </h2>
           <p className="text-sm font-medium text-gray-500 mt-1">Planificación y seguimiento de competencias y torneos.</p>
         </div>
@@ -71,7 +71,7 @@ export default function VistaCalendarioEventos() {
             <RefreshCw className={`w-5 h-5 ${cargando ? 'animate-spin' : ''}`} />
           </button>
           <button className="bg-[#7a2031] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-[#5a1523] transition-all flex items-center">
-            <Plus className="w-4 h-4 mr-2" /> Agendar Evento
+            <Plus className="w-4 h-4 mr-2" /> Agendar evento
           </button>
         </div>
       </div>

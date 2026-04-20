@@ -30,8 +30,8 @@ export default function VistaPadronAtletas({ abrirPerfil }) {
           nombre: `${u.nombre} ${u.primer_apellido} ${u.segundo_apellido || ''}`.trim(),
           curp: u.curp || 'Sin CURP',
           municipio: "Bacalar", 
-          disciplina: u.disciplina_atleta || 'Sin Asignar',
-          entrenador: u.nombre_entrenador ? `${u.nombre_entrenador} ${u.apellido_entrenador}` : "Sin Entrenador",
+          disciplina: u.disciplina_atleta || 'Sin asignar',
+          entrenador: u.nombre_entrenador ? `${u.nombre_entrenador} ${u.apellido_entrenador}` : "Sin entrenador",
           estatus: u.estatus_atleta || 'Pendiente',
           progreso: parseInt(u.progreso_ficha) || 0
         }));
@@ -81,7 +81,7 @@ export default function VistaPadronAtletas({ abrirPerfil }) {
       {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-xl font-bold border border-red-200">{error}</div>}
 
       {/* Caja de filtros redondeada estilo [2rem] */}
-      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 mb-6 shrink-0 flex flex-col xl:flex-row gap-6 justify-between items-center">
+      <div className="bg-white rounded-4xl shadow-sm border border-gray-100 p-6 mb-6 shrink-0 flex flex-col xl:flex-row gap-6 justify-between items-center">
         <div className="relative w-full xl:w-80">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input type="text" placeholder="Buscar por Nombre o CURP..." className="block w-full pl-11 pr-4 py-3 bg-gray-50 border border-transparent rounded-xl outline-none text-sm focus:bg-white focus:border-[#7a2031] transition-all" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
@@ -89,7 +89,7 @@ export default function VistaPadronAtletas({ abrirPerfil }) {
         <div className="flex flex-wrap items-center gap-2 w-full xl:w-auto justify-center">
           {['Todos', 'Validado', 'En revisión', 'Pendiente', 'Rechazado'].map((filtro) => (
             <button key={filtro} onClick={() => setFiltroActivo(filtro)} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${filtroActivo === filtro ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}>
-              {filtro === 'Todos' ? filtro : `• ${filtro}`}
+              {filtro === 'Todos' ? filtro : `${filtro}`}
             </button>
           ))}
         </div>
@@ -104,10 +104,10 @@ export default function VistaPadronAtletas({ abrirPerfil }) {
       {/* Lista de Atletas */}
       <div className="flex-1 space-y-4">
         <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          <div className="col-span-4">Perfil Atlético</div>
-          <div className="col-span-3">Disciplina & Entrenador</div>
-          <div className="col-span-2 text-center">Estado Oficial</div>
-          <div className="col-span-3 text-center">Acciones y Dictamen</div>
+          <div className="col-span-4">Perfil atlético</div>
+          <div className="col-span-3">Disciplina y entrenador</div>
+          <div className="col-span-2 text-center">Estado oficial</div>
+          <div className="col-span-3 text-center">Acciones y dictamen</div>
         </div>
 
         {cargando ? (
@@ -116,7 +116,7 @@ export default function VistaPadronAtletas({ abrirPerfil }) {
             Cargando padrón oficial...
           </div>
         ) : atletasFiltrados.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-[2rem] shadow-sm text-gray-500 border border-gray-100">No hay registros que coincidan con la búsqueda.</div>
+          <div className="text-center py-12 bg-white rounded-4xl shadow-sm text-gray-500 border border-gray-100">No hay registros que coincidan con la búsqueda.</div>
         ) : (
           atletasFiltrados.map((atleta) => {
             const eNormalizado = atleta.estatus.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -126,7 +126,7 @@ export default function VistaPadronAtletas({ abrirPerfil }) {
             else if (eNormalizado.includes('revision')) dotColor = 'bg-amber-500';
 
             return (
-              <div key={atleta.id_usuario} className="bg-white rounded-[1.5rem] p-5 shadow-sm border border-gray-100 flex flex-col md:grid md:grid-cols-12 gap-4 items-center hover:shadow-md transition-shadow group">
+              <div key={atleta.id_usuario} className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 flex flex-col md:grid md:grid-cols-12 gap-4 items-center hover:shadow-md transition-shadow group">
                 <div className="col-span-4 flex items-center w-full">
                   <div className="w-12 h-12 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-lg shrink-0 shadow-inner">{getIniciales(atleta.nombre)}</div>
                   <div className="ml-4 truncate">

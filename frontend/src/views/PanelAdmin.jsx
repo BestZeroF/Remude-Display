@@ -42,11 +42,10 @@ export default function PanelAdmin({ cambiarVista }) {
 
   const opcionesMenu = [
     { id: 'dashboard', etiqueta: 'Escritorio', icono: LayoutDashboard },
-    { id: 'entrenadores', etiqueta: 'Padrón Entrenadores', icono: UserCog },
-    { id: 'atletas', etiqueta: 'Padrón Deportistas', icono: Users },
-    { id: 'clubes', etiqueta: 'Clubes y Equipos', icono: ClipboardList },
-    { id: 'eventos', etiqueta: 'Calendario / Eventos', icono: CalendarDays },
-    { id: 'documentos', etiqueta: 'Repositorio Documental', icono: FileText },
+    { id: 'entrenadores', etiqueta: 'Padrón entrenadores', icono: UserCog },
+    { id: 'atletas', etiqueta: 'Padrón deportistas', icono: Users },
+    { id: 'clubes', etiqueta: 'Clubes y equipos', icono: ClipboardList },
+    { id: 'eventos', etiqueta: 'Calendario', icono: CalendarDays },
     { id: 'configuracion', etiqueta: 'Configuración', icono: Settings },
   ];
 
@@ -102,7 +101,7 @@ export default function PanelAdmin({ cambiarVista }) {
         <div className="p-4 border-t border-gray-800/50 bg-gray-900/50">
           <button onClick={() => cambiarVista('inicio')} className={`flex items-center w-full p-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-colors cursor-pointer group ${!sidebarAbierta && 'justify-center'}`}>
             <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
-            {sidebarAbierta && <span className="ml-3 font-medium">Finalizar Sesión</span>}
+            {sidebarAbierta && <span className="ml-3 font-medium">Finalizar sesión</span>}
           </button>
         </div>
       </aside>
@@ -118,7 +117,7 @@ export default function PanelAdmin({ cambiarVista }) {
             {/* Logo del municipio en la Topbar */}
             <img src={logoMunicipio} alt="Municipio de Bacalar" className="h-12 w-auto object-contain" />
             <div className="border-l-2 border-gray-100 pl-4">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">Hola, Administrador</h2>
+              <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-none mb-1">Hola, administrador</h2>
               <p className="text-sm font-medium text-gray-500">Bacalar, Quintana Roo</p>
             </div>
           </div>
@@ -128,7 +127,7 @@ export default function PanelAdmin({ cambiarVista }) {
               <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Estado del sistema</span>
               <div className="flex items-center text-xs font-bold text-gray-700 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm">
                 <span className={`w-2 h-2 rounded-full mr-2 ${inscripcionesAbiertas ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                {inscripcionesAbiertas ? 'En Línea' : 'Cerrado'}
+                {inscripcionesAbiertas ? 'En línea' : 'Cerrado'}
               </div>
             </div>
 
@@ -142,7 +141,7 @@ export default function PanelAdmin({ cambiarVista }) {
               </button>
 
               {notificacionesAbiertas && (
-                <div className="absolute right-0 mt-3 w-80 bg-white rounded-[2rem] shadow-xl border border-gray-100 overflow-hidden z-50">
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-4xl shadow-xl border border-gray-100 overflow-hidden z-50">
                   <div className="p-5 flex justify-between items-center bg-gray-50/50">
                     <h4 className="text-xs font-black text-gray-900 uppercase tracking-widest">Notificaciones</h4>
                   </div>

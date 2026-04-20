@@ -7,7 +7,7 @@ export default function VistaConfiguracion() {
   const [adminInfo, setAdminInfo] = useState({
     nombre: 'Cargando...',
     correo: 'cargando@remude.com',
-    rol: 'Administrador General'
+    rol: 'Administrador general'
   });
   
   const [passwords, setPasswords] = useState({
@@ -96,7 +96,7 @@ export default function VistaConfiguracion() {
           
           {/* Tarjeta de Identidad Admin */}
           <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-gray-900 to-gray-800"></div>
+            <div className="absolute top-0 left-0 w-full h-24 bg-linear-to-b from-gray-900 to-gray-800"></div>
             
             <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center p-1.5 shadow-lg relative z-10 mt-6 mb-4">
               <div className="w-full h-full rounded-full bg-[#7a2031] flex items-center justify-center text-white text-3xl font-black border-4 border-white">
@@ -131,7 +131,7 @@ export default function VistaConfiguracion() {
                 <span className={`text-sm font-bold block ${inscripcionesAbiertas ? 'text-green-600' : 'text-red-600'}`}>
                   {inscripcionesAbiertas ? 'ABIERTAS' : 'CERRADAS'}
                 </span>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estado Actual</span>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Estado actual</span>
               </div>
               
               {/* Botón Toggle Moderno */}
@@ -156,7 +156,7 @@ export default function VistaConfiguracion() {
           <div className="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-gray-100">
             <h3 className="text-xl font-bold text-gray-900 flex items-center mb-6">
               <Lock className="w-6 h-6 mr-3 text-[#7a2031]" />
-              Seguridad y Contraseña
+              Seguridad y contraseña
             </h3>
             
             {mensaje.texto && (
@@ -171,7 +171,7 @@ export default function VistaConfiguracion() {
             <form onSubmit={manejarCambioPassword} className="space-y-5">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                  Contraseña Actual
+                  Contraseña actual
                 </label>
                 <input
                   type="password"
@@ -186,7 +186,7 @@ export default function VistaConfiguracion() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                    Nueva Contraseña
+                    Nueva contraseña
                   </label>
                   <input
                     type="password"
@@ -223,7 +223,7 @@ export default function VistaConfiguracion() {
                   ) : (
                     <Save className="w-5 h-5 mr-2" />
                   )}
-                  Actualizar Credenciales
+                  Actualizar credenciales
                 </button>
               </div>
             </form>

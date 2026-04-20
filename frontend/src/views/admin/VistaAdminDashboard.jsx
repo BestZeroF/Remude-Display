@@ -61,7 +61,7 @@ export default function VistaAdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         
         {/* KPI: Deportistas (Azul Oscuro) */}
-        <div className="bg-[#0f172a] text-white rounded-[2rem] p-6 md:p-8 shadow-lg flex flex-col relative overflow-hidden transition-transform hover:-translate-y-1">
+        <div className="bg-[#0f172a] text-white rounded-4xl p-6 md:p-8 shadow-lg flex flex-col relative overflow-hidden transition-transform hover:-translate-y-1">
           <div className="flex justify-between items-start mb-4 relative z-10">
             <span className="font-bold text-lg">Deportistas</span>
             <div className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center bg-white/5">
@@ -72,7 +72,7 @@ export default function VistaAdminDashboard() {
         </div>
 
         {/* KPI: Entrenadores (Verde) */}
-        <div className="bg-[#10b981] text-white rounded-[2rem] p-6 md:p-8 shadow-lg flex flex-col relative overflow-hidden transition-transform hover:-translate-y-1">
+        <div className="bg-[#10b981] text-white rounded-4xl p-6 md:p-8 shadow-lg flex flex-col relative overflow-hidden transition-transform hover:-translate-y-1">
           <div className="flex justify-between items-start mb-4 relative z-10">
             <span className="font-bold text-lg">Entrenadores</span>
             <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white/10">
@@ -83,7 +83,7 @@ export default function VistaAdminDashboard() {
         </div>
 
         {/* KPI: Pendientes (Naranja) */}
-        <div className="bg-[#f59e0b] text-white rounded-[2rem] p-6 md:p-8 shadow-lg flex flex-col relative overflow-hidden transition-transform hover:-translate-y-1">
+        <div className="bg-[#f59e0b] text-white rounded-4xl p-6 md:p-8 shadow-lg flex flex-col relative overflow-hidden transition-transform hover:-translate-y-1">
           <div className="flex justify-between items-start mb-4 relative z-10">
             <span className="font-bold text-lg">Pendientes</span>
             <div className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center bg-white/10">
@@ -99,7 +99,7 @@ export default function VistaAdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* COLUMNA IZQUIERDA: Top Disciplinas (Bar Chart Corregido) */}
-        <div className="lg:col-span-5 bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col h-full min-h-[400px]">
+        <div className="lg:col-span-5 bg-white rounded-4xl6 md:p-8 shadow-sm border border-gray-100 flex flex-col h-full min-h-100">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest flex items-center">
               TOP DISCIPLINAS
@@ -128,7 +128,7 @@ export default function VistaAdminDashboard() {
                     <div key={idx} className="flex flex-col items-center justify-end h-full w-full group">
                       <span className="text-xs font-bold text-gray-900 mb-2">{disc.total}</span>
                       <div 
-                        className="w-full max-w-[40px] bg-[#0f172a] rounded-t-xl hover:bg-[#3b82f6] transition-colors shadow-sm"
+                        className="w-full max-w-10 bg-[#0f172a] rounded-t-xl hover:bg-[#3b82f6] transition-colors shadow-sm"
                         style={{ height: `${altura}%` }}
                       ></div>
                     </div>
@@ -152,7 +152,7 @@ export default function VistaAdminDashboard() {
         <div className="lg:col-span-4 flex flex-col gap-6">
           
           {/* Donut 1: Distribución de Género */}
-          <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-gray-100 flex-1 flex items-center gap-6">
+          <div className="bg-white rounded-4xl p-6 md:p-8 shadow-sm border border-gray-100 flex-1 flex items-center gap-6">
             <div className="relative w-28 h-28 shrink-0">
               {/* [CORRECCIÓN]: viewBox ampliado a 42x42 y centro en 21x21 para evitar cortes */}
               <svg viewBox="0 0 42 42" className="w-full h-full transform -rotate-90 drop-shadow-sm overflow-visible">
@@ -178,7 +178,7 @@ export default function VistaAdminDashboard() {
           </div>
 
           {/* Donut 2: Estatus del Padrón */}
-          <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-gray-100 flex-1 flex items-center gap-6">
+          <div className="bg-white rounded-4xl p-6 md:p-8 shadow-sm border border-gray-100 flex-1 flex items-center gap-6">
             <div className="relative w-28 h-28 shrink-0">
               {/* [CORRECCIÓN]: viewBox ampliado a 42x42 y centro en 21x21 para evitar cortes */}
               <svg viewBox="0 0 42 42" className="w-full h-full transform -rotate-90 drop-shadow-sm overflow-visible">
@@ -208,7 +208,7 @@ export default function VistaAdminDashboard() {
         </div>
 
         {/* COLUMNA DERECHA: Actividad Reciente */}
-        <div className="lg:col-span-3 bg-white rounded-[2rem] p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col h-full min-h-[400px]">
+        <div className="lg:col-span-3 bg-white rounded-4xl p-6 md:p-8 shadow-sm border border-gray-100 flex flex-col h-full min-h-100">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">
               ACTIVIDAD RECIENTE
@@ -217,7 +217,7 @@ export default function VistaAdminDashboard() {
 
           <div className="flex-1 relative overflow-y-auto custom-scrollbar pr-2">
             {/* Línea conectora del timeline ajustada */}
-            <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gray-100"></div>
+            <div className="absolute left-2.75 top-2 bottom-2 w-0.5 bg-gray-100"></div>
 
             <div className="space-y-6 relative z-10">
               {cargando ? (
@@ -230,7 +230,7 @@ export default function VistaAdminDashboard() {
                   return (
                     <div key={idx} className="flex gap-4 relative group cursor-default">
                       {/* Punto del timeline (Verde o Naranja) */}
-                      <div className={`w-6 h-6 rounded-full border-[4px] border-white flex items-center justify-center shrink-0 shadow-sm ${esRevision ? 'bg-[#f59e0b]' : 'bg-[#10b981]'}`}></div>
+                      <div className={`w-6 h-6 rounded-full border-4 border-white flex items-center justify-center shrink-0 shadow-sm ${esRevision ? 'bg-[#f59e0b]' : 'bg-[#10b981]'}`}></div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-black text-gray-900 leading-snug uppercase tracking-wide truncate">
                           {esRevision ? 'EN REVISIÓN: ' : 'VALIDADO: '} 

@@ -67,7 +67,7 @@ export default function VistaPadronEntrenadores({ abrirPerfil }) {
       </div>
 
       {/* Caja de filtros redondeada estilo [2rem] */}
-      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6 mb-6 flex flex-col xl:flex-row gap-6 justify-between items-center">
+      <div className="bg-white rounded-4xl shadow-sm border border-gray-100 p-6 mb-6 flex flex-col xl:flex-row gap-6 justify-between items-center">
         <div className="relative w-full xl:w-80">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -91,7 +91,7 @@ export default function VistaPadronEntrenadores({ abrirPerfil }) {
           <div className="text-center py-20 text-gray-400 font-bold">Cargando padrón oficial...</div>
         ) : (
           entrenadoresFiltrados.map((entrenador) => (
-            <div key={entrenador.id_usuario} className="bg-white rounded-[1.5rem] p-6 shadow-sm border border-gray-100 md:grid md:grid-cols-12 gap-6 items-center hover:shadow-md transition-all group">
+            <div key={entrenador.id_usuario} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 md:grid md:grid-cols-12 gap-6 items-center hover:shadow-md transition-all group">
               <div className="col-span-5 flex items-center">
                 <div className="w-14 h-14 rounded-2xl bg-gray-900 text-white flex items-center justify-center font-black text-xl shadow-inner">
                   {entrenador.nombre.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()}
