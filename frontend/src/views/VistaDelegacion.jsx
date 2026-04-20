@@ -13,7 +13,7 @@ function DropdownFiltro({ label, opciones, seleccionados, setSeleccionados }) {
 
   return (
     <div className="relative" ref={drRef}>
-      <button onClick={() => setAbierto(!abierto)} className={`bg-white border text-[11px] rounded-xl py-3 px-4 outline-none font-bold uppercase tracking-widest flex items-center justify-between min-w-40 shadow-sm hover:bg-gray-100 hover:border-gray-400 ${seleccionados.length > 0 ? 'border-[#c2a649] text-gray-900' : 'border-gray-200 text-gray-500'}`}>
+      <button onClick={() => setAbierto(!abierto)} className={`bg-white border text-[11px] rounded-xl py-2.5 px-4 outline-none font-bold uppercase tracking-widest flex items-center justify-between min-w-40 shadow-sm hover:bg-gray-100 hover:border-gray-400 ${seleccionados.length > 0 ? 'border-[#c2a649] text-gray-900' : 'border-gray-200 text-gray-500'}`}>
         {label} {seleccionados.length > 0 && `(${seleccionados.length})`}
       </button>
       {abierto && (
@@ -39,29 +39,18 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
   const [atletas, setAtletas] = useState([]);
 
   useEffect(() => {
-    const fetchDelegacion = async () => {
-      setCargando(true);
-      try {
-        const token = localStorage.getItem('token_remude');
-        const res = await fetch('http://localhost:3000/api/entrenadores/mis-atletas', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setAtletas(Array.isArray(data) ? data : (data.atletas || []));
-        } else {
-          setAtletas([]);
-        }
-      } catch (error) {
-        console.error('Error al obtener la delegación:', error);
-        setAtletas([]);
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    fetchDelegacion();
+    // MODO DEMOSTRACIÓN (VIDEO): Cargamos los atletas directamente sin usar el backend
+    setCargando(true);
+    setTimeout(() => {
+      setAtletas([
+        { id: 201, nombre_completo: "Luis Fernando Salazar", estatus: "Pendiente", disciplina: "Atletismo", division: "Libre", club: "Club Titanes", progreso_ficha: 45, progreso_docs: 0 },
+        { id: 202, nombre_completo: "Carmen Elena Rojas", estatus: "En revisión", disciplina: "Natación", division: "Juvenil", club: "Club Acuático", progreso_ficha: 100, progreso_docs: 100 },
+        { id: 203, nombre_completo: "Roberto Carlos Méndez", estatus: "Validado", disciplina: "Boxeo", division: "Pluma", club: "Fighter Gym", progreso_ficha: 100, progreso_docs: 100 },
+        { id: 204, nombre_completo: "Sofía Margarita Gómez", estatus: "Validado", disciplina: "Taekwondo", division: "Ligero", club: "Dojo Central", progreso_ficha: 100, progreso_docs: 80 },
+        { id: 205, nombre_completo: "Andrés Felipe Vargas", estatus: "Rechazado", disciplina: "Ciclismo", division: "Elite", club: "Ruedas Rápidas", progreso_ficha: 100, progreso_docs: 20 }
+      ]);
+      setCargando(false);
+    }, 400);
   }, []);
 
   const opDis = [...new Set(atletas.map(a => a.disciplina).filter(Boolean))].sort();
@@ -89,39 +78,45 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
     });
 
   return (
-    <div className="max-w-7xl mx-auto w-full animate-fade-in pb-10 flex flex-col h-[calc(100vh-140px)]">
-      <div className="bg-white rounded-3xl shadow-lg p-6 mb-6 mt-2 shrink-0 border border-gray-100">
-        <div className="flex flex-col xl:flex-row gap-4 mb-6">
-          <div className="flex-1 relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-gray-400 transition-all focus-within:border-[#7a2031] px-4 py-3 flex items-center">
+    // Se quitó el h-[calc] que causaba el rectángulo vacío inferior. Ahora respira de manera fluida.
+    <div className="max-w-7xl mx-auto w-full animate-fade-in flex flex-col flex-1 h-full relative">
+      
+      {/* HEADER DE FILTROS COMPACTADO */}
+      <div className="bg-white rounded-3xl shadow-sm p-4 mb-4 mt-1 border border-gray-100 shrink-0">
+        <div className="flex flex-col xl:flex-row gap-3">
+          <div className="flex-1 relative bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-gray-400 transition-all focus-within:border-[#7a2031] px-4 py-2 flex items-center">
             <Search className="w-5 h-5 text-gray-400 mr-3" />
             <input type="text" placeholder="Buscar por nombre o CURP..." className="bg-transparent outline-none text-sm w-full" value={busqueda} onChange={e => setBusqueda(e.target.value)} />
           </div>
-          <div className="flex flex-wrap gap-2">
-            <DropdownFiltro label="Estado expediente" opciones={["Pendiente", "En revisión", "Verificado", "Rechazado"]} seleccionados={filtros.estatus} setSeleccionados={v => setFiltros({...filtros, estatus: v})} />
+          <div className="flex flex-wrap gap-2 items-center">
+            <DropdownFiltro label="Estado expediente" opciones={["Pendiente", "En revisión", "Validado", "Rechazado"]} seleccionados={filtros.estatus} setSeleccionados={v => setFiltros({...filtros, estatus: v})} />
             <DropdownFiltro label="Disciplina" opciones={opDis} seleccionados={filtros.disciplina} setSeleccionados={v => setFiltros({...filtros, disciplina: v})} />
             <DropdownFiltro label="División" opciones={opDiv} seleccionados={filtros.division} setSeleccionados={v => setFiltros({...filtros, division: v})} />
             <DropdownFiltro label="Club" opciones={opClu} seleccionados={filtros.club} setSeleccionados={v => setFiltros({...filtros, club: v})} />
-            <button onClick={() => setOrdenAscendente(!ordenAscendente)} className="bg-white border border-gray-200 shadow-sm p-3 rounded-xl hover:bg-gray-100 hover:border-gray-400 hover:text-[#7a2031] transition-all text-gray-600 flex items-center justify-center">
+            <button onClick={() => setOrdenAscendente(!ordenAscendente)} className="bg-white border border-gray-200 shadow-sm p-2.5 rounded-xl hover:bg-gray-100 hover:border-gray-400 hover:text-[#7a2031] transition-all text-gray-600 flex items-center justify-center">
               {ordenAscendente ? <ArrowDownAZ className="w-5 h-5" /> : <ArrowUpZA className="w-5 h-5" />}
+            </button>
+            <div className="h-8 w-px bg-gray-200 mx-2 hidden xl:block"></div>
+            <button onClick={() => cambiarVistaPanel('inscripcion')} className="bg-[#7a2031] text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#5a1523] flex items-center text-xs whitespace-nowrap">
+              <UserPlus className="w-4 h-4 mr-2" /> Nuevo atleta
             </button>
           </div>
         </div>
-        <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total delegación: {atletas.length}</span>
-          <button onClick={() => cambiarVistaPanel('inscripcion')} className="bg-[#7a2031] text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-[#5a1523] flex items-center text-xs"><UserPlus className="w-4 h-4 mr-2" /> Nuevo atleta</button>
+        
+        <div className="flex justify-between items-center pt-3 mt-3 border-t border-gray-100">
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total padrón: {procesados.length} resultados</span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+      <div className="flex-1 space-y-4 pr-1 pb-4">
         {cargando ? (
-          <div className="text-center py-12 text-gray-400 font-medium">Cargando delegación...</div>
+          <div className="text-center py-12 text-gray-400 font-medium">Cargando padrón...</div>
         ) : procesados.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-3xl shadow-sm text-gray-500 border border-gray-100">No se encontraron atletas.</div>
         ) : (
           procesados.map(a => {
             const estatusReal = a.estatus || a.nombre_estatus || 'Pendiente';
             const nombreMostrar = a.nombre_completo || a.nombre || 'Sin nombre';
-            // NUEVO: Aseguramos tener el ID correcto
             const idSeguro = a.id_atleta || a.id_usuario || a.id;
             
             return (
@@ -137,9 +132,18 @@ export default function VistaDelegacion({ cambiarVistaPanel }) {
                     {a.club && <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded truncate max-w-50" title={a.club}>{a.club}</span>}
                   </div>
                 </div>
-                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${estatusReal.toLowerCase() === 'verificado' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                  {estatusReal}
-                </div>
+                {(() => {
+                  let colorBadge = 'bg-gray-100 text-gray-500 border border-gray-200'; // Gris por defecto
+                  if (estatusReal.toLowerCase() === 'validado' || estatusReal.toLowerCase() === 'verificado') colorBadge = 'bg-[#e5f5e8] text-[#2e7d32] border border-[#c8e6c9]';
+                  else if (estatusReal.toLowerCase() === 'en revisión') colorBadge = 'bg-[#fff4e5] text-[#b26a00] border border-[#ffe0b2]';
+                  else if (estatusReal.toLowerCase() === 'rechazado') colorBadge = 'bg-red-50 text-red-700 border border-red-200';
+                  
+                  return (
+                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${colorBadge}`}>
+                      {estatusReal}
+                    </div>
+                  );
+                })()}
                 <div className="flex gap-3">
                   <div onClick={(e) => { e.stopPropagation(); cambiarVistaPanel('perfilAtleta', idSeguro, 'editar'); }}>
                     <ProgressBtn label="Ficha" pct={a.progreso_ficha || 0} color="[#7a2031]" Icon={Edit} />

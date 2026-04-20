@@ -17,7 +17,11 @@ import logoMunicipio from '../assets/logo-municipio.png';
 export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
   const [mostrarNotificaciones, setMostrarNotificaciones] = useState(false);
+  
+  // NUEVO: Estados para manejar qué vista y qué perfil específico abrir
   const [vistaPanel, setVistaPanel] = useState('resumen'); 
+  const [idAtletaSeleccionado, setIdAtletaSeleccionado] = useState(null);
+  const [accionPerfil, setAccionPerfil] = useState(null);
   
   const [intentoNavegacion, setIntentoNavegacion] = useState(null);
 
@@ -31,77 +35,36 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
 
   useEffect(() => {
     const fetchDashboard = async () => {
-      const token = localStorage.getItem('token_remude');
-
-      if (token === 'MODO_PRUEBA') {
+      // MODO DEMOSTRACIÓN (VIDEO)
+      setTimeout(() => {
         setDatosDashboard({
           usuario: {
             nombre: `${usuarioAutenticado?.nombre || 'Victoria'} ${usuarioAutenticado?.apellidos || 'Piña'}`,
             ubicacion: "Bacalar, Quintana Roo",
-            disciplina: "Atletismo (Modo Prueba)"
           },
           notificaciones: [
-            { id: 1, texto: "La CURP de Ana López fue rechazada por inconsistencias.", leida: false },
-            { id: 2, texto: "Atleta Gerardo Amaro validado con éxito.", leida: true }
+            { id: 1, texto: "La CURP de Andrés Felipe fue rechazada por inconsistencias.", leida: false },
+            { id: 2, texto: "Atleta Roberto Carlos validado con éxito.", leida: true }
           ],
           atletas: {
             pendientes: [
-              { id: 105, nombre_completo: "David Jhonson Alvaro", progreso_ficha: 45, progreso_docs: 0 }
+              { id: 201, nombre_completo: "Luis Fernando Salazar", progreso_ficha: 45, progreso_docs: 0 }
             ],
             enRevision: [
-              { id: 107, nombre_completo: "Carlos Manuel Sosa", progreso_ficha: 100, progreso_docs: 100 }
+              { id: 202, nombre_completo: "Carmen Elena Rojas", progreso_ficha: 100, progreso_docs: 100 }
             ],
             validados: [
-              { id: 104, nombre_completo: "Gerardo Amaro", progreso_ficha: 100, progreso_docs: 100 },
-              { id: 106, nombre_completo: "Victoria Isabel Piña Poot", progreso_ficha: 100, progreso_docs: 80 }
+              { id: 203, nombre_completo: "Roberto Carlos Méndez", progreso_ficha: 100, progreso_docs: 100 },
+              { id: 204, nombre_completo: "Sofía Margarita Gómez", progreso_ficha: 100, progreso_docs: 80 }
             ],
             rechazados: [
-              { id: 108, nombre_completo: "Ana María López", progreso_ficha: 100, progreso_docs: 20 }
+              { id: 205, nombre_completo: "Andrés Felipe Vargas", progreso_ficha: 100, progreso_docs: 20 }
             ]
           },
           totalAtletas: 5
         });
         setCargando(false);
-        return;
-      }
-
-      try {
-        const URL_DASHBOARD = 'http://localhost:3000/api/entrenadores/dashboard'; 
-        
-        const respuesta = await fetch(URL_DASHBOARD, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (respuesta.ok) {
-          const data = await respuesta.json();
-          
-          const hayAtletasBD = data.totalAtletas > 0;
-
-          setDatosDashboard({
-            usuario: {
-              nombre: `${data.entrenador?.nombre || usuarioAutenticado?.nombre || ''} ${data.entrenador?.apellidos || usuarioAutenticado?.apellidos || ''}`,
-              ubicacion: "Bacalar, Quintana Roo",
-            },
-            notificaciones: data.notificaciones || [],
-            atletas: hayAtletasBD ? data.atletas : { 
-              pendientes: [{ id: 105, nombre_completo: "David Jhonson Alvaro", progreso_ficha: 45, progreso_docs: 0 }],
-              enRevision: [{ id: 107, nombre_completo: "Carlos Manuel Sosa", progreso_ficha: 100, progreso_docs: 100 }],
-              validados: [{ id: 104, nombre_completo: "Gerardo Amaro", progreso_ficha: 100, progreso_docs: 100 }, { id: 106, nombre_completo: "Victoria Isabel Piña Poot", progreso_ficha: 100, progreso_docs: 80 }],
-              rechazados: [{ id: 108, nombre_completo: "Ana María López", progreso_ficha: 100, progreso_docs: 20 }]
-            },
-            totalAtletas: hayAtletasBD ? data.totalAtletas : 5
-          });
-        } else {
-           console.error("Error al cargar el dashboard");
-           if(respuesta.status === 401) cambiarVista('login');
-        }
-      } catch (error) {
-        console.error("Error de red conectando al backend:", error);
-      } finally {
-        setCargando(false);
-      }
+      }, 400);
     };
 
     fetchDashboard();
@@ -109,11 +72,18 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
 
   const conteoNoLeidas = datosDashboard.notificaciones.filter(n => !n.leida).length;
 
+  // NUEVO: Función maestra que gestiona los cambios de pantalla recibiendo el ID del atleta
+  const handleCambiarVistaPanel = (vista, id = null, accion = null) => {
+    setVistaPanel(vista);
+    setIdAtletaSeleccionado(id);
+    setAccionPerfil(accion);
+  };
+
   const handleMenuClick = (destino) => {
     if (vistaPanel === 'inscripcion') {
       setIntentoNavegacion(destino);
     } else {
-      setVistaPanel(destino);
+      handleCambiarVistaPanel(destino);
     }
   };
 
@@ -132,7 +102,7 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
       localStorage.removeItem('token_remude'); 
       cambiarVista('inicio');
     } else {
-      setVistaPanel(destino);
+      handleCambiarVistaPanel(destino);
     }
   };
 
@@ -169,7 +139,7 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
             <SidebarItem icono={UserPlus} etiqueta="Inscribir atleta" estaAbierto={sidebarAbierta} activo={vistaPanel === 'inscripcion'} />
           </div>
           <div onClick={() => handleMenuClick('delegacion')}>
-            <SidebarItem icono={Users} etiqueta="Mi delegación" estaAbierto={sidebarAbierta} activo={vistaPanel === 'delegacion' || vistaPanel === 'perfilAtleta'} />
+            <SidebarItem icono={Users} etiqueta="Mi padrón" estaAbierto={sidebarAbierta} activo={vistaPanel === 'delegacion' || vistaPanel === 'perfilAtleta'} />
           </div>
         </nav>
 
@@ -192,14 +162,14 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
             
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-gray-800 leading-snug">
-                {vistaPanel === 'resumen' && `Hola, ${cargando ? '...' : datosDashboard.usuario.nombre}`}
-                {vistaPanel === 'delegacion' && 'Mi delegación'}
+                {vistaPanel === 'resumen' && 'Estado de los expedientes'}
+                {vistaPanel === 'delegacion' && 'Mi padrón'}
                 {vistaPanel === 'inscripcion' && 'Inscripción de atleta'}
                 {vistaPanel === 'perfil' && 'Perfil del entrenador'}
                 {vistaPanel === 'perfilAtleta' && 'Ficha técnica'}
               </h2>
               <p className="text-xs md:text-sm font-medium text-gray-500 mt-1">
-                {vistaPanel === 'resumen' && `${datosDashboard.usuario.ubicacion}`}
+                {vistaPanel === 'resumen' && 'Resumen general y métricas del padrón municipal'}
                 {vistaPanel === 'delegacion' && 'Gestión y seguimiento de expedientes deportivos'}
                 {vistaPanel === 'inscripcion' && 'Completa los datos estructurados para el padrón municipal'}
                 {vistaPanel === 'perfil' && 'Ajustes y preferencias de tu cuenta'}
@@ -242,44 +212,35 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
           </div>
         </header>
 
-        {/* main maneila el scroll, permitiendo que el footer se quede naturalmente abajo */}
         <main className="flex-1 overflow-y-auto px-8 pt-6 flex flex-col bg-gray-50/50 relative">
           
           {vistaPanel === 'resumen' && (
              <div className="flex-1 max-w-6xl mx-auto w-full animate-fade-in pb-10">
-                
-                {/* TÍTULO Y LEYENDA (Modificados para mayor jerarquía) */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 border-b border-gray-200/60 pb-4">
-                  <h3 className="text-2xl font-black text-gray-900 uppercase tracking-widest">
-                    ESTADO DE LOS EXPEDIENTES
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full mt-2">
                   <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <CardEstado 
                       titulo="Pendientes" cantidad={datosDashboard.atletas.pendientes.length} 
                       icono={Clock} colorFondo="bg-gray-900" colorTexto="text-white"
                       atletas={datosDashboard.atletas.pendientes}
-                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
+                      onClickAtleta={(id) => handleCambiarVistaPanel('perfilAtleta', id)}
                     />
                     <CardEstado 
                       titulo="En revisión" cantidad={datosDashboard.atletas.enRevision.length} 
                       icono={AlertCircle} colorFondo="bg-amber-500" colorTexto="text-white"
                       atletas={datosDashboard.atletas.enRevision}
-                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
+                      onClickAtleta={(id) => handleCambiarVistaPanel('perfilAtleta', id)}
                     />
                     <CardEstado 
                       titulo="Validados" cantidad={datosDashboard.atletas.validados.length} 
                       icono={CheckCircle} colorFondo="bg-emerald-600" colorTexto="text-white"
                       atletas={datosDashboard.atletas.validados}
-                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
+                      onClickAtleta={(id) => handleCambiarVistaPanel('perfilAtleta', id)}
                     />
                     <CardEstado 
                       titulo="Rechazados" cantidad={datosDashboard.atletas.rechazados.length} 
                       icono={XCircle} colorFondo="bg-rose-600" colorTexto="text-white"
                       atletas={datosDashboard.atletas.rechazados}
-                      onClickAtleta={() => handleMenuClick('perfilAtleta')}
+                      onClickAtleta={(id) => handleCambiarVistaPanel('perfilAtleta', id)}
                     />
                   </div>
 
@@ -350,31 +311,45 @@ export default function PanelEntrenador({ cambiarVista, usuarioAutenticado }) {
           )}
 
           {vistaPanel === 'inscripcion' && (
-            <div className="flex-1 pb-10">
+            <div className="flex-1">
               <VistaInscripcionAtleta 
                 intentoNavegacion={intentoNavegacion}
                 confirmarNavegacion={confirmarNavegacion}
                 cancelarNavegacion={() => setIntentoNavegacion(null)}
-                solicitarNavegacion={handleMenuClick}
-                cambiarVistaPanel={setVistaPanel} 
+                solicitarNavegacion={handleCambiarVistaPanel}
+                cambiarVistaPanel={handleCambiarVistaPanel} 
               />
             </div>
           )}
 
           {vistaPanel === 'delegacion' && (
-            <div className="flex-1 pb-10">
-              <VistaDelegacion cambiarVistaPanel={setVistaPanel} />
+            <div className="flex-1">
+              <VistaDelegacion cambiarVistaPanel={handleCambiarVistaPanel} />
             </div>
           )}
           
           {vistaPanel === 'perfilAtleta' && (
-            <div className="flex-1 pb-10">
-              <VistaPerfilAtleta cambiarVistaPanel={setVistaPanel} />
+            <div className="flex-1">
+              <VistaPerfilAtleta 
+                cambiarVistaPanel={handleCambiarVistaPanel} 
+                atletaId={idAtletaSeleccionado} 
+                accionInicial={accionPerfil}
+                tipoPerfil="atleta"
+              />
             </div>
           )}
 
-          {/* Footer libre en la base, natural al scroll */}
-          <footer className="mt-auto py-6 w-full text-xs text-gray-400 font-bold uppercase tracking-widest flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-200/50">
+          {/* NUEVA VISTA: Mi Perfil (Entrenador) */}
+          {vistaPanel === 'perfil' && (
+            <div className="flex-1">
+              <VistaPerfilAtleta 
+                cambiarVistaPanel={handleCambiarVistaPanel} 
+                tipoPerfil="entrenador"
+              />
+            </div>
+          )}
+
+          <footer className="mt-8 py-6 w-full text-xs text-gray-400 font-bold uppercase tracking-widest flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-gray-200/50 shrink-0">
             <span>© {new Date().getFullYear()} MUNICIPIO DE BACALAR.</span>
             <div className="flex space-x-6">
               <button onClick={() => cambiarVista('acercaDe')} className="hover:text-gray-900 transition-colors">Acerca de</button>
