@@ -1,3 +1,4 @@
+// src/views/admin/VistaClubesEquipos.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   Search, ClipboardList, Plus, Users, Phone, Mail, 
@@ -6,20 +7,20 @@ import {
 
 export default function VistaClubesEquipos() {
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState('');
   const [clubes, setClubes] = useState([]);
   
-  // Listas para los selectores
+  // Listas simuladas para los selectores
   const [entrenadoresDisponibles, setEntrenadoresDisponibles] = useState([]);
-  const [disciplinasDisponibles, setDisciplinasDisponibles] = useState([
+  const [disciplinasDisponibles] = useState([
     { id: 1, nombre: 'Fútbol' },
     { id: 2, nombre: 'Básquetbol' },
     { id: 3, nombre: 'Voleibol' },
     { id: 4, nombre: 'Atletismo' },
     { id: 5, nombre: 'Béisbol' },
-    { id: 6, nombre: 'Natación' }
-  ]); // Fallback por si no tienes la ruta de disciplinas aún
+    { id: 6, nombre: 'Natación' },
+    { id: 7, nombre: 'Canotaje' }
+  ]); 
 
   const [mostrarModal, setMostrarModal] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -36,49 +37,80 @@ export default function VistaClubesEquipos() {
     cargarDatosIniciales();
   }, []);
 
-  const cargarDatosIniciales = async () => {
+  const cargarDatosIniciales = () => {
     setCargando(true);
-    await Promise.all([obtenerClubes(), obtenerCatalogos()]);
-    setCargando(false);
-  };
+    
+    // Simulamos un tiempo de carga de red (800ms)
+    setTimeout(() => {
+      // 1. Cargamos entrenadores falsos para el formulario
+      setEntrenadoresDisponibles([
+        { id_entrenador: 101, nombre: 'Gerardo', primer_apellido: 'Amaro', especialidad: 'Natación' },
+        { id_entrenador: 102, nombre: 'Victoria', primer_apellido: 'Piña', especialidad: 'Atletismo' },
+        { id_entrenador: 103, nombre: 'Carlos', primer_apellido: 'Mendoza', especialidad: 'Fútbol' },
+        { id_entrenador: 104, nombre: 'Ana', primer_apellido: 'López', especialidad: 'Voleibol' }
+      ]);
 
-  const obtenerCatalogos = async () => {
-    try {
-      const token = localStorage.getItem('token_remude');
+      // 2. Cargamos clubes falsos pero realistas
+      setClubes([
+        {
+          id_club: 1,
+          nombre_club: 'Delfines de Bacalar',
+          nombre_disciplina: 'Natación',
+          nombre_representante_real: 'Gerardo Amaro',
+          telefono_contacto: '9831234567',
+          correo_contacto: 'delfines@bacalar.com',
+          fecha_fundacion: '2018-05-15',
+          id_estatus: 3,
+          estatus_texto: 'Activo'
+        },
+        {
+          id_club: 2,
+          nombre_club: 'Tiburones Rojos',
+          nombre_disciplina: 'Fútbol',
+          nombre_representante_real: 'Carlos Mendoza',
+          telefono_contacto: '9837654321',
+          correo_contacto: 'tiburones.fc@gmail.com',
+          fecha_fundacion: '2020-01-10',
+          id_estatus: 3,
+          estatus_texto: 'Activo'
+        },
+        {
+          id_club: 3,
+          nombre_club: 'Gacelas Track Club',
+          nombre_disciplina: 'Atletismo',
+          nombre_representante_real: 'Victoria Piña',
+          telefono_contacto: '9831112233',
+          correo_contacto: 'gacelas.track@outlook.com',
+          fecha_fundacion: '2019-11-20',
+          id_estatus: 3,
+          estatus_texto: 'Activo'
+        },
+        {
+          id_club: 4,
+          nombre_club: 'Pioneros Hoops',
+          nombre_disciplina: 'Básquetbol',
+          nombre_representante_real: 'Sin Asignar',
+          telefono_contacto: '9839998877',
+          correo_contacto: 'pioneros.bacalar@gmail.com',
+          fecha_fundacion: '2021-08-05',
+          id_estatus: 2,
+          estatus_texto: 'En Revisión'
+        },
+        {
+          id_club: 5,
+          nombre_club: 'Club Laguna Mágica',
+          nombre_disciplina: 'Canotaje',
+          nombre_representante_real: 'Ana López',
+          telefono_contacto: '9834445566',
+          correo_contacto: 'laguna.magica@bacalar.gob.mx',
+          fecha_fundacion: '2015-03-22',
+          id_estatus: 3,
+          estatus_texto: 'Activo'
+        }
+      ]);
       
-      // 1. Obtenemos entrenadores
-      const resUser = await fetch('http://localhost:3000/api/admin/usuarios', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (resUser.ok) {
-        const dataUser = await resUser.json();
-        setEntrenadoresDisponibles(dataUser.usuarios.filter(u => u.nombre_rol?.toLowerCase() === 'entrenador'));
-      }
-
-      // 2. Obtenemos disciplinas (si la ruta falla, usa el fallback de arriba)
-      const resDisc = await fetch('http://localhost:3000/api/catalogos/disciplinas');
-      if(resDisc.ok) {
-        const dataDisc = await resDisc.json();
-        if(dataDisc.length > 0) setDisciplinasDisponibles(dataDisc);
-      }
-    } catch (err) { 
-      console.error("Error cargando catálogos", err); 
-    }
-  };
-
-  const obtenerClubes = async () => {
-    try {
-      setError(null);
-      const token = localStorage.getItem('token_remude');
-      const respuesta = await fetch('http://localhost:3000/api/clubes', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!respuesta.ok) throw new Error("No se pudieron cargar los clubes.");
-      const data = await respuesta.json();
-      setClubes(data);
-    } catch (err) { 
-      setError(err.message); 
-    }
+      setCargando(false);
+    }, 800);
   };
 
   const manejarCambioForm = (e) => {
@@ -86,39 +118,41 @@ export default function VistaClubesEquipos() {
     setFormData({ ...formData, [name]: value });
   };
 
-  const manejarRegistro = async (e) => {
+  const manejarRegistro = (e) => {
     e.preventDefault();
     setGuardando(true);
-    try {
-      const token = localStorage.getItem('token_remude');
-      
-      // Preparamos los datos
-      const payload = {
-        ...formData,
-        id_disciplina: formData.id_disciplina ? parseInt(formData.id_disciplina) : null,
-        id_entrenador_lider: formData.id_entrenador_lider ? parseInt(formData.id_entrenador_lider) : null
+    
+    // Simulamos el retraso de guardar en la DB
+    setTimeout(() => {
+      // Buscamos los nombres reales basados en los IDs seleccionados para mostrarlos en la UI
+      const disciplinaSel = disciplinasDisponibles.find(d => d.id === parseInt(formData.id_disciplina));
+      const entrenadorSel = entrenadoresDisponibles.find(ent => ent.id_entrenador === parseInt(formData.id_entrenador_lider));
+
+      // Construimos el nuevo objeto del club
+      const nuevoClub = {
+        id_club: Date.now(), // Generamos un ID falso único
+        nombre_club: formData.nombre_club,
+        nombre_disciplina: disciplinaSel ? disciplinaSel.nombre : 'Multidisciplinario',
+        nombre_representante_real: entrenadorSel ? `${entrenadorSel.nombre} ${entrenadorSel.primer_apellido}` : 'Sin Asignar',
+        telefono_contacto: formData.telefono_contacto || 'Sin teléfono',
+        correo_contacto: formData.correo_contacto || 'Sin correo',
+        fecha_fundacion: formData.fecha_fundacion || null,
+        id_estatus: 3,
+        estatus_texto: 'Activo'
       };
 
-      const respuesta = await fetch('http://localhost:3000/api/clubes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(payload)
-      });
+      // Lo inyectamos al principio de la lista actual de clubes
+      setClubes([nuevoClub, ...clubes]);
       
-      if (!respuesta.ok) throw new Error("Error al guardar el club.");
-      
+      // Limpiamos y cerramos
       setMostrarModal(false);
       setFormData({
         nombre_club: '', id_disciplina: '', id_entrenador_lider: '',
         telefono_contacto: '', correo_contacto: '', fecha_fundacion: ''
       });
-      obtenerClubes();
-      alert("Club registrado y entrelazado exitosamente.");
-    } catch (err) { 
-      alert(err.message); 
-    } finally {
       setGuardando(false);
-    }
+      
+    }, 600); // 600ms de simulación de guardado
   };
 
   const clubesFiltrados = clubes.filter(club => 
@@ -152,6 +186,7 @@ export default function VistaClubesEquipos() {
           <button 
             onClick={cargarDatosIniciales}
             className="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-500 hover:text-[#7a2031] transition-all shadow-sm"
+            title="Recargar datos simulados"
           >
             <RefreshCw className={`w-5 h-5 ${cargando ? 'animate-spin' : ''}`} />
           </button>
@@ -165,7 +200,7 @@ export default function VistaClubesEquipos() {
       </div>
 
       {/* BARRA DE BÚSQUEDA */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 mb-6 shrink-0">
+      <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-4 mb-6 shrink-0">
         <div className="relative w-full max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
           <input
@@ -185,21 +220,16 @@ export default function VistaClubesEquipos() {
         {cargando ? (
           <div className="text-center py-20 text-gray-400 font-bold flex flex-col items-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#7a2031] mb-4"></div>
-            Obteniendo registros...
-          </div>
-        ) : error ? (
-          <div className="py-20 text-center bg-red-50 rounded-3xl border border-red-100">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-800 font-bold">{error}</p>
+            Generando datos de prueba...
           </div>
         ) : clubesFiltrados.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+          <div className="text-center py-20 bg-white rounded-[2rem] border border-dashed border-gray-200">
             <p className="text-gray-400 font-medium text-lg">No se encontraron clubes registrados.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {clubesFiltrados.map((club) => (
-              <div key={club.id_club} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
+              <div key={club.id_club} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all group relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-[#c2a649]"></div>
                 
                 <div className="flex justify-between items-start mb-4">
@@ -214,7 +244,7 @@ export default function VistaClubesEquipos() {
                   
                   <div className="flex gap-1">
                     <button className="p-2 text-gray-400 hover:text-blue-600 bg-gray-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
-                    <button className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button className="p-2 text-gray-400 hover:text-red-600 bg-gray-50 rounded-lg transition-colors" onClick={() => setClubes(clubes.filter(c => c.id_club !== club.id_club))}><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
 
@@ -251,16 +281,16 @@ export default function VistaClubesEquipos() {
       </div>
 
       {/* =========================================================
-          MODAL DE REGISTRO DE CLUB
+          MODAL DE REGISTRO DE CLUB (FRONTEND ONLY)
           ========================================================= */}
       {mostrarModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
-              <h3 className="font-black text-gray-800 text-lg flex items-center">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
+              <h3 className="font-black text-gray-800 text-lg flex items-center uppercase tracking-widest">
                 <Trophy className="w-5 h-5 mr-2 text-[#7a2031]" />
-                Registrar club entrelazado
+                Registrar club 
               </h3>
               <button onClick={() => setMostrarModal(false)} className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
                 <X className="w-5 h-5" />
@@ -278,7 +308,7 @@ export default function VistaClubesEquipos() {
                     required 
                     value={formData.nombre_club} 
                     onChange={manejarCambioForm}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:bg-white transition-all"
                     placeholder="Ej. Delfines Azules"
                   />
                 </div>
@@ -290,11 +320,11 @@ export default function VistaClubesEquipos() {
                       name="id_disciplina" 
                       value={formData.id_disciplina} 
                       onChange={manejarCambioForm}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:bg-white transition-all"
                     >
                       <option value="">Multidisciplinario</option>
                       {disciplinasDisponibles.map(disc => (
-                        <option key={disc.id_disciplina || disc.id} value={disc.id_disciplina || disc.id}>{disc.nombre_disciplina || disc.nombre}</option>
+                        <option key={disc.id} value={disc.id}>{disc.nombre}</option>
                       ))}
                     </select>
                   </div>
@@ -306,7 +336,7 @@ export default function VistaClubesEquipos() {
                       name="fecha_fundacion" 
                       value={formData.fecha_fundacion} 
                       onChange={manejarCambioForm}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:bg-white transition-all"
                     />
                   </div>
                 </div>
@@ -324,12 +354,12 @@ export default function VistaClubesEquipos() {
                         required
                         value={formData.id_entrenador_lider} 
                         onChange={manejarCambioForm}
-                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
+                        className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:bg-white transition-all"
                       >
-                        <option value="">-- Seleccione un entrenador de la base de datos --</option>
+                        <option value="">-- Seleccione de la base simulada --</option>
                         {entrenadoresDisponibles.map(ent => (
-                          <option key={ent.id_usuario} value={ent.id_entrenador}>
-                            {ent.nombre} {ent.primer_apellido} ({ent.especialidad || 'Sin especialidad'})
+                          <option key={ent.id_entrenador} value={ent.id_entrenador}>
+                            {ent.nombre} {ent.primer_apellido} ({ent.especialidad})
                           </option>
                         ))}
                       </select>
@@ -343,7 +373,7 @@ export default function VistaClubesEquipos() {
                           name="telefono_contacto" 
                           value={formData.telefono_contacto} 
                           onChange={manejarCambioForm}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:bg-white transition-all"
                           placeholder="10 dígitos"
                         />
                       </div>
@@ -354,7 +384,7 @@ export default function VistaClubesEquipos() {
                           name="correo_contacto" 
                           value={formData.correo_contacto} 
                           onChange={manejarCambioForm}
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:ring-1 focus:ring-[#7a2031] transition-all"
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-[#7a2031] focus:bg-white transition-all"
                           placeholder="correo@ejemplo.com"
                         />
                       </div>
@@ -364,11 +394,11 @@ export default function VistaClubesEquipos() {
               </form>
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50 shrink-0">
+            <div className="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/50 shrink-0">
               <button 
                 type="button" 
                 onClick={() => setMostrarModal(false)}
-                className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm"
+                className="px-5 py-2.5 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm uppercase tracking-widest"
               >
                 Cancelar
               </button>
@@ -376,7 +406,7 @@ export default function VistaClubesEquipos() {
                 type="submit" 
                 form="formClub"
                 disabled={guardando}
-                className="px-6 py-2.5 text-sm font-bold text-white bg-[#7a2031] rounded-xl hover:bg-[#5a1523] transition-colors shadow-md flex items-center"
+                className="px-6 py-2.5 text-sm font-bold text-white bg-[#7a2031] rounded-xl hover:bg-[#5a1523] transition-colors shadow-md flex items-center uppercase tracking-widest"
               >
                 {guardando ? (
                   <><div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div> Guardando...</>
