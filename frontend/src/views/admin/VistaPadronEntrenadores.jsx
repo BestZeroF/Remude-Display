@@ -61,7 +61,7 @@ export default function VistaPadronEntrenadores({ abrirPerfil }) {
             <RefreshCw className={`w-5 h-5 ${cargando ? 'animate-spin' : ''}`} />
           </button>
           <button className="bg-[#0f172a] text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md hover:bg-gray-800 transition-all">
-            + Nuevo Entrenador
+            + Nuevo entrenador
           </button>
         </div>
       </div>
